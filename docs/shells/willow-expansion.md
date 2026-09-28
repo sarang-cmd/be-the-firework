@@ -5,3 +5,11 @@ The willow integrates with `k = 0.34` per second, a deliberately small drag so t
 ## Where it lives
 
 `index.html` — `shellWillow()`
+
+## Related
+
+- [Willow colour](willow-palette.md)
+
+## Status
+
+Documented against build v1.0.0; numbers read out of the live source.
