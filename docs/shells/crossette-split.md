@@ -5,3 +5,12 @@
 ## Where it lives
 
 `index.html` — `shellCrossette()`
+
+## Related
+
+- [Palm outer fan](palm-fan.md)
+- [Crossette split plane](crossette-plane.md)
+
+## Status
+
+Documented against build v1.0.0; numbers read out of the live source.
