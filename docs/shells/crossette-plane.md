@@ -5,3 +5,12 @@ The four children are laid out in the plane perpendicular to the parent, built f
 ## Where it lives
 
 `index.html` — `shellCrossette()`
+
+## Related
+
+- [Crossette split](crossette-split.md)
+- [Crossette second generation](crossette-secondgen.md)
+
+## Status
+
+Documented against build v1.0.0; numbers read out of the live source.
