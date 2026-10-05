@@ -5,3 +5,12 @@
 ## Where it lives
 
 `index.html` — `shellRing()`
+
+## Related
+
+- [Ring expansion](ring-radius.md)
+- [Strobe phase lock](strobe-phase.md)
+
+## Status
+
+Documented against build v1.0.0; numbers read out of the live source.
