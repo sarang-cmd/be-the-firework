@@ -5,3 +5,12 @@
 ## Where it lives
 
 `index.html` — `ember vertex shader`
+
+## Related
+
+- [Ribbon width](ribbon-width.md)
+- [Ribbon wobble](ribbon-wobble.md)
+
+## Status
+
+Documented against build v1.0.0; numbers read out of the live source.
