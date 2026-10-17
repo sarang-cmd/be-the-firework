@@ -5,3 +5,12 @@
 ## Where it lives
 
 `index.html` — `buildComposer()`
+
+## Related
+
+- [Star field](star-field.md)
+- [Tone mapping](tone-mapping.md)
+
+## Status
+
+Documented against build v1.0.0; numbers read out of the live source.
