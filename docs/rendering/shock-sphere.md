@@ -5,3 +5,12 @@ A rim-lit sphere on `DoubleSide` that expands to a maximum radius of about 89 m 
 ## Where it lives
 
 `index.html` — `buildShock()`
+
+## Related
+
+- [Tone mapping](tone-mapping.md)
+- [Ignition disc](ignition-disc.md)
+
+## Status
+
+Documented against build v1.0.0; numbers read out of the live source.
