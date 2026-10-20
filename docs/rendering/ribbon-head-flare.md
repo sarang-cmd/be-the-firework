@@ -5,3 +5,11 @@ Only the head segment is widened (`headFlare`), and the flare is applied to widt
 ## Where it lives
 
 `index.html` — `ember vertex shader`
+
+## Related
+
+- [Tube interior](tube-cylinder.md)
+
+## Status
+
+Documented against build v1.0.0; numbers read out of the live source.
