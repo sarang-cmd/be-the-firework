@@ -5,3 +5,11 @@ Position is closed-form: `p0 + v0·(1-e^{-kt})/k + g·t′`, evaluated per verte
 ## Where it lives
 
 `index.html` — `ember vertex shader`
+
+## Related
+
+- [Gravity](gravity.md)
+
+## Status
+
+Documented against build v1.0.0; numbers read out of the live source.
