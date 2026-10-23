@@ -5,3 +5,12 @@
 ## Where it lives
 
 `index.html` — `apex constant`
+
+## Related
+
+- [Launch duration](launch-duration.md)
+- [Camera flinch](camera-flinch.md)
+
+## Status
+
+Documented against build v1.0.0; numbers read out of the live source.
