@@ -5,3 +5,12 @@
 ## Where it lives
 
 `index.html` — `shock uniform`
+
+## Related
+
+- [Field of view](fov-breathe.md)
+- [Time dilation](dilation.md)
+
+## Status
+
+Documented against build v1.0.0; numbers read out of the live source.
