@@ -5,3 +5,12 @@
 ## Where it lives
 
 `index.html` — `render loop`
+
+## Related
+
+- [Ember cooling](ember-cooling.md)
+- [Camera fall through the bloom](camera-fall.md)
+
+## Status
+
+Documented against build v1.0.0; numbers read out of the live source.
