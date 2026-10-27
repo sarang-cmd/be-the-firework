@@ -5,3 +5,11 @@
 ## Where it lives
 
 `index.html` — `breathe camera`
+
+## Related
+
+- [Flash decay](flash-decay.md)
+
+## Status
+
+Documented against build v1.0.0; numbers read out of the live source.
