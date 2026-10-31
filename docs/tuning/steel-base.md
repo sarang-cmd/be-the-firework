@@ -5,3 +5,12 @@
 ## Where it lives
 
 `index.html` — `tube fragment shader`
+
+## Related
+
+- [Crowd glow over the lip](rim-glow.md)
+- [Smoke heat](smoke-heat.md)
+
+## Status
+
+Documented against build v1.0.0; numbers read out of the live source.
