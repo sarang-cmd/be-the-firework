@@ -5,3 +5,12 @@
 ## Where it lives
 
 `index.html` — `smoke fragment shader`
+
+## Related
+
+- [Steel base colour](steel-base.md)
+- [Crowd flash](crowd-flash.md)
+
+## Status
+
+Documented against build v1.0.0; numbers read out of the live source.
