@@ -1,0 +1,1991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>BE THE FIREWORK — a shell's four seconds, from inside</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#05060a;overflow:hidden;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    -webkit-font-smoothing:antialiased;color:#d8cdba;touch-action:none;}
+  #cv{display:block;width:100%;height:100%;cursor:grab}
+  #cv.drag{cursor:grabbing}
+  #flash{position:fixed;inset:0;pointer-events:none;opacity:0;z-index:5;
+    background:radial-gradient(circle at 50% 46%, #fff6dc 0%, #ffce7a 30%, #ff9a2e 55%, rgba(255,120,20,0) 78%);
+    mix-blend-mode:screen}
+  #vig{position:fixed;inset:0;pointer-events:none;z-index:4;
+    background:radial-gradient(ellipse at 50% 48%, rgba(0,0,0,0) 38%, rgba(0,0,0,.42) 78%, rgba(0,0,0,.78) 100%)}
+  #bars{position:fixed;inset:0;pointer-events:none;z-index:6;opacity:0;transition:opacity .35s}
+  #bars .b{position:absolute;left:0;right:0;height:7.5vh;background:#000}
+  #bars .top{top:0} #bars .bot{bottom:0}
+  #bars.on{opacity:1}
+
+  #hud{position:fixed;left:14px;bottom:14px;z-index:10;width:270px;padding:11px 12px 10px;
+    background:linear-gradient(180deg, rgba(14,13,18,.72), rgba(8,8,11,.62));
+    border:1px solid rgba(255,205,140,.14); border-radius:12px;
+    backdrop-filter:blur(9px) saturate(120%); -webkit-backdrop-filter:blur(9px) saturate(120%);
+    box-shadow:0 10px 40px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,225,180,.05);
+    font-size:10px; letter-spacing:.12em; text-transform:uppercase;
+    opacity:0; transition:opacity .8s ease, transform .8s ease; transform:translateY(6px);
+    user-select:none}
+  #hud.on{opacity:1;transform:none}
+  #hud.photo{opacity:0;pointer-events:none}
+  .row{display:flex;align-items:center;gap:8px;margin:0 0 7px}
+  .row:last-child{margin-bottom:0}
+  .lbl{color:#8a8272;min-width:52px;font-size:9px}
+  .val{color:#ffcf8a;min-width:42px;text-align:right;font-variant-numeric:tabular-nums}
+  select,button{font-family:inherit;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:#d9cdb6;background:rgba(255,220,170,.06);border:1px solid rgba(255,205,140,.18);
+    border-radius:6px;padding:4px 6px;outline:none;cursor:pointer;transition:.18s}
+  select:hover,button:hover{background:rgba(255,205,140,.14);color:#ffe6bd}
+  button.act{background:rgba(255,180,80,.22);border-color:rgba(255,190,110,.55);color:#fff0d2}
+  select{flex:1;appearance:none;text-align:left}
+  input[type=range]{-webkit-appearance:none;appearance:none;flex:1;height:3px;border-radius:2px;
+    background:linear-gradient(90deg,#ffb347 0%,#ffb347 var(--p,30%),rgba(255,255,255,.13) var(--p,30%));outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;border-radius:50%;
+    background:#ffd9a0;box-shadow:0 0 10px rgba(255,170,60,.9);cursor:pointer;border:none}
+  input[type=range]::-moz-range-thumb{width:11px;height:11px;border-radius:50%;background:#ffd9a0;border:none;
+    box-shadow:0 0 10px rgba(255,170,60,.9);cursor:pointer}
+  .presets{gap:4px;flex-wrap:wrap}
+  .presets button{flex:1 1 auto;padding:4px 5px;font-size:8.5px;letter-spacing:.06em}
+  #hint{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:9;
+    font-size:9px;letter-spacing:.28em;color:rgba(220,205,180,.5);text-transform:uppercase;
+    pointer-events:none;opacity:0;transition:opacity 1.2s}
+  #hint.on{opacity:1}
+  #fps{color:#6f6a5f;font-size:8.5px}
+  #boot{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;gap:14px;
+    align-items:center;justify-content:center;background:#05060a;text-align:center;padding:24px;
+    transition:opacity .6s ease}
+  #boot .t{font-size:10px;letter-spacing:.42em;color:#c9a06a;text-transform:uppercase}
+  #boot .s{font-size:9px;letter-spacing:.18em;color:#4d4740;max-width:340px;line-height:1.9;text-transform:uppercase}
+  #boot .d{width:26px;height:26px;border:1px solid rgba(255,180,90,.25);border-top-color:#ffb347;
+    border-radius:50%;animation:sp 1.1s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  @media (max-width:560px){ #hud{width:calc(100% - 20px);left:10px;bottom:10px;padding:8px 9px}
+    .presets button{font-size:8px} #hint{display:none} }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="boot">
+  <div class="d"></div>
+  <div class="t">In the tube</div>
+  <div class="s">If this does not clear, the page is being opened without a server &mdash; ES modules and the import map need HTTP.</div>
+</div>
+<div id="vig"></div>
+<div id="flash"></div>
+<div id="bars"><div class="b top"></div><div class="b bot"></div></div>
+
+<div id="hud">
+  <div class="row"><span class="lbl">Shell</span>
+    <select id="shell">
+      <option value="auto">Auto — cycle</option>
+      <option value="willow">Golden willow</option>
+      <option value="chrysanthemum">Chrysanthemum</option>
+      <option value="palm">Palm</option>
+      <option value="crossette">Crossette</option>
+      <option value="ring">Ring</option>
+      <option value="strobe">Strobe</option>
+      <option value="finale">Finale — triple break</option>
+    </select>
+  </div>
+  <div class="row"><span class="lbl">Time</span>
+    <input id="dil" type="range" min="1" max="15" step="0.25" value="5">
+    <span class="val" id="dilv">×5.0</span>
+  </div>
+  <div class="row"><span class="lbl">Cadence</span>
+    <select id="cad">
+      <option value="0.7">Brisk</option>
+      <option value="1" selected>Festival</option>
+      <option value="1.6">Drift</option>
+    </select>
+  </div>
+  <div class="row">
+    <button id="fly">Free-fly</button>
+    <button id="photo">Photo</button>
+    <button id="sound">Sound off</button>
+    <button id="reset">Reset</button>
+  </div>
+  <div class="row presets">
+    <button data-p="tube">Tube</button>
+    <button data-p="apex">Apex</button>
+    <button data-p="bloom">Bloom</button>
+    <button data-p="crossette">Crossette</button>
+    <button data-p="ring">Halo</button>
+    <button data-p="willow">Willow ↓</button>
+    <button data-p="crowd">Crowd</button>
+  </div>
+  <div class="row"><span class="lbl">Quality</span>
+    <select id="qual">
+      <option value="high" selected>High</option>
+      <option value="medium">Medium</option>
+      <option value="low">Low</option>
+    </select>
+    <span id="fps">—</span>
+  </div>
+</div>
+<div id="hint">drag to look · f free-fly · p photo · r reset</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+/* ============================================================================
+   BE THE FIREWORK
+   You are the shell. The camera does not watch the show — it is the show.
+   ========================================================================== */
+
+const clamp = (x,a,b)=> x<a?a:(x>b?b:x);
+const lerp  = (a,b,t)=> a+(b-a)*t;
+const smoothstep = (a,b,x)=>{ const t=clamp((x-a)/(b-a),0,1); return t*t*(3-2*t); };
+const TAU = Math.PI*2;
+
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+let rnd = mulberry32(20261120);
+const R = ()=> rnd();
+const RS = (a,b)=> a+(b-a)*rnd();
+
+const canvas = document.getElementById('cv');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:false, powerPreference:'high-performance', stencil:false, alpha:false});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+renderer.setSize(window.innerWidth, window.innerHeight, false);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.92;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(72, window.innerWidth/window.innerHeight, 0.35, 9000);
+scene.add(camera);
+
+/* ---------------------------------------------------------------- quality */
+const QUALITY = {
+  high:   { embers: 16000, segs: 9, smoke: 240, bloom: true,  crowd: 4200, trailDt: 0.072 },
+  medium: { embers: 8000,  segs: 6, smoke: 130, bloom: false, crowd: 2400, trailDt: 0.07  },
+  low:    { embers: 4200,  segs: 4, smoke: 64,  bloom: false, crowd: 1200, trailDt: 0.09  }
+};
+let QNAME = 'high';
+let Q = QUALITY[QNAME];
+
+/* ------------------------------------------------------------- show state */
+const S = {
+  phase: 'tube',          // tube | launch | burst | breathe
+  t: 0,                   // seconds within phase
+  fwT: 0,                 // firework clock (dilated time)
+  timeScale: 1,
+  dil: 5,
+  cadence: 1,
+  shellPref: 'auto',
+  shellIdx: 0,
+  burstT0: 0,
+  burstPos: new THREE.Vector3(0, 178, 0),
+  burstType: 'willow',
+  fbT: 0,
+  flash: 0,
+  flashLayer: 0,
+  shock: 0,
+  apex: 176,
+  camMode: 'ride',        // ride | crowd
+  freeFly: false,
+  photo: false,
+  sound: false,
+  ready: false
+};
+
+const T_TUBE = 1.0;
+const T_LAUNCH = 3.42;
+const T_BURST = 4.6;      // fw-seconds of bloom before the fall takes over
+
+const GRAV = -9.81;
+
+/* ==========================================================================
+   1. THE EMBER FIELD
+   Every star is an individual tracked body: analytic drag + gravity, so the
+   ribbon trail is sampled backwards in time from the same closed-form
+   solution — no CPU history, no per-frame uploads, ten thousand honest arcs.
+   ========================================================================== */
+
+let SEGS = Q.segs, E_CAP = Q.embers;
+let emberMesh = null, emberGeo = null, emberMat = null, EU = null;
+let A_p0=null, A_v0=null, A_pr=null, A_col=null, A_w=null, A_fl=null, A_seg=null;
+let cursor = 0, highWater = 0;
+let dA = Infinity, dB = -Infinity;   // dirty instance range this frame
+
+const EMBER_VERT = `
+  precision highp float;
+  uniform float uTime, uTrailDt, uSegs;
+  uniform vec3  uG;
+  attribute vec3 aP0, aV0, aCol;
+  attribute vec4 aPr;
+  attribute vec2 aFl;
+  attribute float aW, aSeg;
+  varying vec3  vCol;
+  varying float vX, vSeg, vHot;
+
+  vec3 posAt(float t, vec3 p0, vec3 v0, float k){
+    t = max(t, 0.0);
+    float e = exp(-k*t);
+    float A = (1.0-e)/k;
+    float B = (t - (1.0-e)/k)/k;
+    return p0 + v0*A + uG*B;
+  }
+  float h11(float x){ return fract(sin(x*91.3458)*47453.5453); }
+
+  void main(){
+    float k     = aPr.x;
+    float birth = aPr.y;
+    float life  = aPr.z;
+    float seed  = aPr.w;
+    float tl    = uTime - birth;
+    float dt    = uTrailDt;
+
+    float tA = tl - aSeg*dt;
+    float tB = tA - dt;
+    vec3 pA = posAt(tA, aP0, aV0, k);
+    vec3 pB = posAt(tB, aP0, aV0, k);
+
+    vec3 dir = pB - pA;
+    float dl = length(dir);
+    dir = dl > 1e-5 ? dir/dl : vec3(0.0,1.0,0.0);
+    vec3 vd = cameraPosition - pA;
+    float dist = max(length(vd), 0.001);
+    vec3 side = cross(dir, vd/dist);
+    float sl = length(side);
+    side = sl > 1e-5 ? side/sl : vec3(1.0,0.0,0.0);
+
+    float age  = clamp(tl/life, 0.0, 1.0);
+    float segT = aSeg/uSegs;
+    float segN = (aSeg+1.0)/uSegs;
+    float born = smoothstep(0.0, dt*1.2, tB);        // fade in at the tail tip
+    float wA = pow(1.0 - segT*0.90, 0.80);
+    float wB = pow(1.0 - min(1.0,segN)*0.90, 0.80);
+    float w = aW * mix(wA, wB, position.x) * (1.0 - 0.45*age);
+    float headFlare = (aSeg < 0.5) ? (1.0 + 0.55*(1.0-position.x)) : 1.0;
+    w = clamp(w*headFlare, dist*0.0015, dist*0.0105) * born;
+    float tS = mix(tA, tB, position.x);
+    float wobble = sin(tS*13.0 + seed*29.0)*0.055 + sin(tS*5.3 + seed*11.0)*0.045;
+    vec3 p = mix(pA, pB, position.x) + side * (position.y + wobble) * w;
+
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+    vX = position.y;
+    vSeg = segT;
+
+    /* ---- luminosity envelope ---- */
+    float on = step(0.0, tl) * smoothstep(0.0, 0.015, tl) * (1.0 - smoothstep(0.70, 1.0, age));
+    float fr = 5.0 + 24.0*fract(seed*13.77);
+    float fl = 0.70 + 0.30*sin(tl*fr + seed*37.0);
+    if (aFl.x > 0.5 && aFl.x < 1.5){                     // synchronized strobe
+      float ph = fract(tl*4.2 - seed*0.012);
+      fl = mix(0.02, 2.3, smoothstep(0.34,0.44,ph)*smoothstep(0.80,0.66,ph));
+    } else if (aFl.x >= 1.5){                            // crackle pop
+      float h = h11(seed*91.7 + floor(tl*26.0));
+      fl *= 0.30 + 2.1*step(0.64, h);
+    }
+    float tfA = pow(1.0 - segT*0.97, 0.72);
+    float tfB = pow(1.0 - min(1.0,segN)*0.97, 0.72);
+    float tailFade = mix(tfA, tfB, position.x) * born;
+    float bright = on * tailFade * fl * (0.34 + 0.52*(1.0-age));
+    if (aSeg < 0.5) bright *= 1.0 + 0.7*(1.0-position.x);
+    vHot = 1.0 - segT;
+
+    vec3 c = mix(vec3(1.0,0.965,0.88), aCol, smoothstep(0.0, 0.10, age));
+    vec3 dying = mix(vec3(0.55,0.055,0.012), aCol*0.28, 1.0 - aFl.y);
+    c = mix(c, dying, smoothstep(0.34, 1.0, age));
+    vCol = c * bright;
+  }
+`;
+
+const EMBER_FRAG = `
+  precision highp float;
+  varying vec3  vCol;
+  varying float vX, vSeg, vHot;
+  void main(){
+    float a = abs(vX);
+    float edge = pow(max(0.0, 1.0 - a), 2.3);
+    float core = pow(max(0.0, 1.0 - a), 6.0) * (0.35 + 0.9*vHot);
+    vec3 c = vCol * (0.42 + 1.30*core);
+    if (edge < 0.004) discard;
+    gl_FragColor = vec4(c, edge);
+  }
+`;
+
+function disposeEmbers(){
+  if (emberMesh){ scene.remove(emberMesh); emberGeo.dispose(); emberMat.dispose(); emberMesh = null; }
+}
+
+function buildEmbers(){
+  disposeEmbers();
+  SEGS = Q.segs; E_CAP = Q.embers;
+  const C = E_CAP * SEGS;
+
+  emberGeo = new THREE.InstancedBufferGeometry();
+  const quad = new THREE.BufferGeometry();
+  quad.setAttribute('position', new THREE.Float32BufferAttribute([
+    0,-1,0,  0,1,0,  1,-1,0,  1,1,0
+  ], 3));
+  quad.setIndex([0,1,2, 2,1,3]);
+  emberGeo.index = quad.index;
+  emberGeo.setAttribute('position', quad.getAttribute('position'));
+  emberGeo.instanceCount = 0;
+  emberGeo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e5);
+
+  A_p0  = new THREE.InstancedBufferAttribute(new Float32Array(C*3), 3).setUsage(THREE.DynamicDrawUsage);
+  A_v0  = new THREE.InstancedBufferAttribute(new Float32Array(C*3), 3).setUsage(THREE.DynamicDrawUsage);
+  A_col = new THREE.InstancedBufferAttribute(new Float32Array(C*3), 3).setUsage(THREE.DynamicDrawUsage);
+  A_pr  = new THREE.InstancedBufferAttribute(new Float32Array(C*4), 4).setUsage(THREE.DynamicDrawUsage);
+  A_fl  = new THREE.InstancedBufferAttribute(new Float32Array(C*2), 2).setUsage(THREE.DynamicDrawUsage);
+  A_w   = new THREE.InstancedBufferAttribute(new Float32Array(C*1), 1).setUsage(THREE.DynamicDrawUsage);
+  A_seg = new THREE.InstancedBufferAttribute(new Float32Array(C*1), 1).setUsage(THREE.DynamicDrawUsage);
+
+  emberGeo.setAttribute('aP0',  A_p0);
+  emberGeo.setAttribute('aV0',  A_v0);
+  emberGeo.setAttribute('aCol', A_col);
+  emberGeo.setAttribute('aPr',  A_pr);
+  emberGeo.setAttribute('aFl',  A_fl);
+  emberGeo.setAttribute('aW',   A_w);
+  emberGeo.setAttribute('aSeg', A_seg);
+
+  EU = {
+    uTime:    { value: 0 },
+    uTrailDt: { value: Q.trailDt*1.25 },
+    uSegs:    { value: SEGS },
+    uG:       { value: new THREE.Vector3(0, GRAV, 0) }
+  };
+
+  emberMat = new THREE.ShaderMaterial({
+    uniforms: EU,
+    vertexShader: EMBER_VERT,
+    fragmentShader: EMBER_FRAG,
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    depthTest: true
+  });
+
+  emberMesh = new THREE.Mesh(emberGeo, emberMat);
+  emberMesh.frustumCulled = false;
+  emberMesh.renderOrder = 6;
+  scene.add(emberMesh);
+
+  cursor = 0; highWater = 0;
+  emberGeo.instanceCount = 0;
+  dA = Infinity; dB = -Infinity;
+}
+
+function markDirty(a, b){ if (a < dA) dA = a; if (b > dB) dB = b; }
+
+function flushDirty(){
+  if (dA === Infinity) return;
+  const n = dB - dA;
+  for (const at of [A_p0,A_v0,A_col,A_pr,A_fl,A_w,A_seg]){
+    if (at.addUpdateRange){ at.clearUpdateRanges(); at.addUpdateRange(dA*at.itemSize, n*at.itemSize); }
+    else { at.updateRange.offset = dA*at.itemSize; at.updateRange.count = n*at.itemSize; }
+    at.needsUpdate = true;
+  }
+  dA = Infinity; dB = -Infinity;
+}
+
+/* one ember = SEGS instances of ribbon */
+function spawnEmber(px,py,pz, vx,vy,vz, k, birth, life, seed,
+                    r,g,b, w, type, cool){
+  if (cursor >= E_CAP) return;
+  k = Math.max(k, 0.22);
+  const base = cursor * SEGS;
+  for (let s=0; s<SEGS; s++){
+    const j = base + s;
+    const i3 = j*3, i4 = j*4, i2 = j*2;
+    A_p0.array[i3] = px; A_p0.array[i3+1] = py; A_p0.array[i3+2] = pz;
+    A_v0.array[i3] = vx; A_v0.array[i3+1] = vy; A_v0.array[i3+2] = vz;
+    A_col.array[i3] = r; A_col.array[i3+1] = g; A_col.array[i3+2] = b;
+    A_pr.array[i4] = k; A_pr.array[i4+1] = birth; A_pr.array[i4+2] = life; A_pr.array[i4+3] = seed;
+    A_fl.array[i2] = type; A_fl.array[i2+1] = cool;
+    A_w.array[j] = w;
+    A_seg.array[j] = s;
+  }
+  markDirty(base, base + SEGS);
+  cursor++;
+  const inst = cursor * SEGS;
+  if (inst > highWater){
+    highWater = inst;
+    emberGeo.instanceCount = inst;
+  }
+}
+
+const _ep = new THREE.Vector3();
+function emberPos(out, px,py,pz, vx,vy,vz, k, t){
+  t = Math.max(t, 0);
+  const e = Math.exp(-k*t);
+  const A = (1-e)/k;
+  const B = (t - (1-e)/k)/k;
+  return out.set(px + vx*A, py + vy*A + GRAV*B, pz + vz*A);
+}
+
+/* ==========================================================================
+   2. ATMOSPHERE — sky, stars, smoke strata, shock wave, glow billboards
+   ========================================================================== */
+
+const skyU = { uFlash:{value:0}, uGlow:{value:0.0} };
+const skyMat = new THREE.ShaderMaterial({
+  side: THREE.BackSide, depthWrite: false, depthTest: false,
+  uniforms: skyU,
+  vertexShader: `
+    varying vec3 vP;
+    void main(){ vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader: `
+    varying vec3 vP;
+    uniform float uFlash;
+    void main(){
+      vec3 d = normalize(vP);
+      float h = clamp(d.y*1.0, -1.0, 1.0);
+      vec3 zen = vec3(0.004,0.006,0.016);
+      vec3 mid = vec3(0.010,0.014,0.030);
+      vec3 hor = vec3(0.040,0.032,0.034);   // sodium light pollution over the harbour
+      vec3 c = mix(mid, zen, smoothstep(0.05,0.85,h));
+      c = mix(c, hor, smoothstep(0.18,-0.06,h));
+      float band = exp(-pow((dot(d, normalize(vec3(0.42,0.72,0.55)))-0.12)*2.6,2.0));
+      c += vec3(0.020,0.018,0.030)*band;      // faint milky band
+      c += uFlash*vec3(0.05,0.035,0.015);
+      gl_FragColor = vec4(c,1.0);
+    }`
+});
+const sky = new THREE.Mesh(new THREE.SphereGeometry(6200, 32, 20), skyMat);
+sky.frustumCulled = false; sky.renderOrder = -10;
+scene.add(sky);
+
+/* ---- stars ---- */
+function buildStars(n){
+  const g = new THREE.BufferGeometry();
+  const p = new Float32Array(n*3), s = new Float32Array(n), sz = new Float32Array(n);
+  for (let i=0;i<n;i++){
+    const u = R()*2-1, th = R()*TAU, r = Math.sqrt(1-u*u);
+    const rr = 5200;
+    p[i*3] = Math.cos(th)*r*rr; p[i*3+1] = u*rr*0.9+220; p[i*3+2] = Math.sin(th)*r*rr;
+    s[i] = R(); sz[i] = 1.2 + Math.pow(R(),3)*4.2;
+  }
+  g.setAttribute('position', new THREE.BufferAttribute(p,3));
+  g.setAttribute('aSeed', new THREE.BufferAttribute(s,1));
+  g.setAttribute('aSize', new THREE.BufferAttribute(sz,1));
+  const m = new THREE.ShaderMaterial({
+    transparent:true, depthWrite:false, depthTest:false, blending:THREE.AdditiveBlending,
+    uniforms:{ uTime:{value:0}, uBoost:{value:1.0}, uPix:{value:renderer.getPixelRatio()} },
+    vertexShader:`
+      attribute float aSeed, aSize;
+      uniform float uTime, uBoost, uPix;
+      varying float vB;
+      void main(){
+        vec4 mv = modelViewMatrix*vec4(position,1.0);
+        gl_Position = projectionMatrix*mv;
+        float tw = 0.62+0.38*sin(uTime*(0.7+aSeed*2.2)+aSeed*61.0);
+        vB = tw*uBoost*(0.35+0.65*aSeed);
+        gl_PointSize = aSize*uPix*(0.55+0.45*uBoost);
+      }`,
+    fragmentShader:`
+      varying float vB;
+      void main(){
+        vec2 q = gl_PointCoord-0.5; float r = length(q);
+        float a = pow(max(0.0,1.0-r*2.0), 2.2);
+        gl_FragColor = vec4(vec3(0.85,0.88,1.0)*vB*0.9, a*vB);
+      }`
+  });
+  const pts = new THREE.Points(g,m);
+  pts.frustumCulled = false; pts.renderOrder = -9;
+  return pts;
+}
+const stars = buildStars(2400);
+scene.add(stars);
+
+/* ---- glow billboard helper ---- */
+const GLOW_V = `
+  uniform float uSize;
+  varying vec2 vUv;
+  void main(){
+    vUv = position.xy;
+    vec4 wp = modelMatrix*vec4(0.0,0.0,0.0,1.0);
+    vec4 mv = viewMatrix*wp;
+    mv.xy += position.xy*uSize;
+    gl_Position = projectionMatrix*mv;
+  }`;
+const GLOW_F = `
+  varying vec2 vUv;
+  uniform vec3 uColor; uniform float uIntensity, uPower, uRing;
+  void main(){
+    float r = length(vUv);
+    float a;
+    if (uRing > 0.5){
+      a = smoothstep(0.62,0.94,r)*smoothstep(1.0,0.95,r);
+    } else {
+      a = pow(max(0.0,1.0-r), uPower);
+    }
+    gl_FragColor = vec4(uColor*uIntensity, a);
+  }`;
+
+function makeGlow(){
+  const g = new THREE.PlaneGeometry(2,2);
+  const m = new THREE.ShaderMaterial({
+    uniforms:{ uSize:{value:1}, uColor:{value:new THREE.Color(1,0.8,0.4)},
+               uIntensity:{value:1}, uPower:{value:2.4}, uRing:{value:0} },
+    vertexShader: GLOW_V, fragmentShader: GLOW_F,
+    transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, depthTest:true
+  });
+  const mesh = new THREE.Mesh(g,m);
+  mesh.frustumCulled = false;
+  return mesh;
+}
+
+/* ---- smoke strata ---- */
+let smokeMesh = null, smokeGeo = null, smokeMat = null, SMU = null, smokeCursor = 0;
+let S_C=null, S_D=null, S_V=null, sDirty=false;
+
+function buildSmoke(){
+  if (smokeMesh){ scene.remove(smokeMesh); smokeGeo.dispose(); smokeMat.dispose(); }
+  const N = Q.smoke;
+  smokeGeo = new THREE.InstancedBufferGeometry();
+  const q = new THREE.PlaneGeometry(2,2);
+  smokeGeo.index = q.index;
+  smokeGeo.setAttribute('position', q.getAttribute('position'));
+  smokeGeo.instanceCount = 0;
+  smokeGeo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e5);
+  const cap = 420;
+  S_C = new THREE.InstancedBufferAttribute(new Float32Array(cap*3),3).setUsage(THREE.DynamicDrawUsage);
+  S_D = new THREE.InstancedBufferAttribute(new Float32Array(cap*4),4).setUsage(THREE.DynamicDrawUsage);
+  S_V = new THREE.InstancedBufferAttribute(new Float32Array(cap*3),3).setUsage(THREE.DynamicDrawUsage);
+  smokeGeo.setAttribute('aC', S_C); smokeGeo.setAttribute('aD', S_D); smokeGeo.setAttribute('aV', S_V);
+  SMU = {
+    uTime:{value:0}, uFlash:{value:0}, uHeat:{value:0},
+    uBurst:{value:new THREE.Vector3()}, uPix:{value:renderer.getPixelRatio()}
+  };
+  smokeMat = new THREE.ShaderMaterial({
+    uniforms: SMU, transparent:true, depthWrite:false, depthTest:true,
+    blending: THREE.NormalBlending,
+    vertexShader:`
+      attribute vec3 aC, aV; attribute vec4 aD;
+      uniform float uTime, uPix;
+      varying vec2 vUv; varying float vSeed, vAge, vDist;
+      void main(){
+        float tl = max(uTime - aD.x, 0.0);
+        float age = clamp(tl/aD.y, 0.0, 1.0);
+        vec3 c = aC + aV*tl;
+        c.y += 1.2*tl*sqrt(age);
+        vec4 mv = viewMatrix*vec4(c,1.0);
+        float size = aD.z*(0.30 + 1.55*pow(age,0.55));
+        mv.xy += position.xy*size;
+        vDist = -mv.z;
+        gl_Position = projectionMatrix*mv;
+        vUv = position.xy;
+        vSeed = aD.w; vAge = age;
+      }`,
+    fragmentShader:`
+      precision highp float;
+      varying vec2 vUv; varying float vSeed, vAge, vDist;
+      uniform float uTime, uFlash, uHeat; uniform vec3 uBurst;
+      float h11(float x){ return fract(sin(x*127.1)*43758.5453); }
+      void main(){
+        float r = length(vUv);
+        if (r > 1.0) discard;
+        float a = pow(smoothstep(1.0, 0.02, r), 1.35);
+        a *= 0.88 + 0.12*sin(vSeed*43.0 + r*13.0 - uTime*0.55 + vAge*3.0)
+                 * sin(vSeed*17.0 - r*7.0 + uTime*0.31);
+        float fade = smoothstep(0.0, 0.10, vAge) * (1.0 - smoothstep(0.55, 1.0, vAge));
+        vec3 base = mix(vec3(0.014,0.015,0.022), vec3(0.040,0.036,0.044), vSeed);
+        vec3 lit  = vec3(1.0,0.60,0.24)*uFlash*0.75 + vec3(1.0,0.52,0.20)*uHeat*0.30;
+        vec3 col = base + lit;
+        float al = a*fade*0.030*(0.55 + uFlash*2.4 + uHeat*0.9);
+        al *= smoothstep(4.0, 26.0, vDist);          // never fog the lens
+        gl_FragColor = vec4(col, clamp(al,0.0,0.42));
+      }`
+  });
+  smokeMesh = new THREE.Mesh(smokeGeo, smokeMat);
+  smokeMesh.frustumCulled = false; smokeMesh.renderOrder = 4;
+  scene.add(smokeMesh);
+  smokeCursor = 0; sDirty = false;
+}
+
+function spawnSmoke(px,py,pz, size, life, vx,vy,vz){
+  const cap = 420;
+  if (smokeCursor >= cap) smokeCursor = 0;
+  const i = smokeCursor++;
+  S_C.array[i*3]=px; S_C.array[i*3+1]=py; S_C.array[i*3+2]=pz;
+  S_D.array[i*4]=S.fwT + RS(-0.6,0.25); S_D.array[i*4+1]=life; S_D.array[i*4+2]=size; S_D.array[i*4+3]=R();
+  S_V.array[i*3]=vx; S_V.array[i*3+1]=vy; S_V.array[i*3+2]=vz;
+  smokeGeo.instanceCount = Math.min(cap, Math.max(smokeGeo.instanceCount, i+1));
+  sDirty = true;
+}
+
+/* ---- shock wave ---- */
+const shockU = { uProg:{value:0}, uFade:{value:1}, uColor:{value:new THREE.Color(1.0,0.72,0.34)} };
+const shockMat = new THREE.ShaderMaterial({
+  uniforms: shockU, Transparent: true, transparent:true, depthWrite:false,
+  blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+  vertexShader:`
+    varying vec3 vN; varying vec3 vV;
+    void main(){
+      vec4 wp = modelMatrix*vec4(position,1.0);
+      vN = normalize(mat3(modelMatrix)*normal);
+      vV = normalize(cameraPosition - wp.xyz);
+      gl_Position = projectionMatrix*viewMatrix*wp;
+    }`,
+  fragmentShader:`
+    varying vec3 vN; varying vec3 vV;
+    uniform float uProg, uFade; uniform vec3 uColor;
+    void main(){
+      float f = 1.0 - abs(dot(normalize(vN), normalize(vV)));
+      float rim = pow(f, 3.4);
+      float a = rim*uFade;
+      gl_FragColor = vec4(uColor*(0.35 + rim*2.2), a*0.85);
+    }`
+});
+const shockMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 28), shockMat);
+shockMesh.visible = false; shockMesh.frustumCulled = false; shockMesh.renderOrder = 5;
+scene.add(shockMesh);
+
+/* shell body — the thing we are riding, seen from outside */
+const shellGlow = makeGlow();
+shellGlow.material.uniforms.uSize.value = 4.5;
+shellGlow.material.uniforms.uColor.value.setRGB(1.0,0.82,0.45);
+shellGlow.material.uniforms.uIntensity.value = 2.2;
+shellGlow.visible = false;
+scene.add(shellGlow);
+
+/* ==========================================================================
+   3. THE WORLD — a real harbour festival, 178 m below the seat
+   ========================================================================== */
+
+const BOX_FACES = [
+  { n:[ 1,0,0], c:[[ .5,-.5,-.5],[ .5, .5,-.5],[ .5, .5, .5],[ .5,-.5, .5]] },
+  { n:[-1,0,0], c:[[-.5,-.5, .5],[-.5, .5, .5],[-.5, .5,-.5],[-.5,-.5,-.5]] },
+  { n:[ 0,1,0], c:[[-.5, .5, .5],[ .5, .5, .5],[ .5, .5,-.5],[-.5, .5,-.5]] },
+  { n:[ 0,-1,0],c:[[-.5,-.5,-.5],[ .5,-.5,-.5],[ .5,-.5, .5],[-.5,-.5, .5]] },
+  { n:[ 0,0,1], c:[[-.5,-.5, .5],[ .5,-.5, .5],[ .5, .5, .5],[-.5, .5, .5]] },
+  { n:[ 0,0,-1],c:[[-.5, .5,-.5],[ .5, .5,-.5],[ .5,-.5,-.5],[-.5,-.5,-.5]] }
+];
+
+class MeshBuilder {
+  constructor(){ this.p=[]; this.n=[]; this.l=[]; this.s=[]; }
+  box(cx,cy,cz, sx,sy,sz, rotY, seed){
+    const co = Math.cos(rotY||0), si = Math.sin(rotY||0);
+    for (const f of BOX_FACES){
+      const nx = f.n[0]*co + f.n[2]*si, nz = -f.n[0]*si + f.n[2]*co;
+      const N = [nx, f.n[1], nz];
+      const idx = [0,1,2, 0,2,3];
+      for (let k=0;k<6;k++){
+        const c = f.c[idx[k]];
+        const lx = c[0]*sx, ly = c[1]*sy, lz = c[2]*sz;
+        const wx = lx*co + lz*si + cx;
+        const wz = -lx*si + lz*co + cz;
+        this.p.push(wx, ly+cy, wz);
+        this.n.push(N[0],N[1],N[2]);
+        this.l.push(c[0],c[1],c[2]);
+        this.s.push(seed||0);
+      }
+    }
+  }
+  geom(){
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(this.p,3));
+    g.setAttribute('normal',   new THREE.Float32BufferAttribute(this.n,3));
+    g.setAttribute('aLocal',   new THREE.Float32BufferAttribute(this.l,3));
+    g.setAttribute('aSeed',    new THREE.Float32BufferAttribute(this.s,1));
+    g.computeBoundingSphere();
+    return g;
+  }
+}
+
+const cityU = {
+  uFlash:{value:0}, uFlashCol:{value:new THREE.Color(1.0,0.62,0.28)},
+  uTime:{value:0}, uWindow:{value:1.0}, uBase:{value:1.0}
+};
+
+function cityMaterial(name){
+  return new THREE.ShaderMaterial({
+    uniforms: cityU,
+    vertexShader:`
+      attribute vec3 aLocal; attribute float aSeed;
+      varying vec3 vW, vN, vL; varying float vSeed, vDist;
+      void main(){
+        vec4 wp = modelMatrix*vec4(position,1.0);
+        vW = wp.xyz; vN = normalize(mat3(modelMatrix)*normal); vL = aLocal; vSeed = aSeed;
+        vec4 mv = viewMatrix*wp;
+        vDist = -mv.z;
+        gl_Position = projectionMatrix*mv;
+      }`,
+    fragmentShader:`
+      precision highp float;
+      varying vec3 vW, vN, vL; varying float vSeed, vDist;
+      uniform float uFlash, uTime, uWindow, uBase; uniform vec3 uFlashCol;
+      float h21(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7)))*43758.5453); }
+      void main(){
+        vec3 n = normalize(vN);
+        float up = clamp(n.y, 0.0, 1.0);
+        float wy = clamp(vW.y/130.0, 0.0, 1.0);
+        vec3 base = mix(vec3(0.017,0.019,0.029), vec3(0.005,0.006,0.010), up);
+        base *= (0.55 + 0.9*wy) * (0.65 + 0.7*h21(vec2(vSeed,3.0)));
+        base *= uBase;
+        /* window grid on vertical faces */
+        float win = 0.0;
+        if (uWindow > 0.5 && abs(n.y) < 0.55){
+          vec2 uv = abs(n.x) > 0.5 ? vec2(vW.z, vW.y) : vec2(vW.x, vW.y);
+          vec2 cell = floor(uv/vec2(2.7,2.2));
+          vec2 f = fract(uv/vec2(2.7,2.2));
+          float hh = h21(cell + vSeed*13.0);
+          float lit = step(0.62, hh);
+          float shape = step(0.16,f.x)*step(f.x,0.78)*step(0.24,f.y)*step(f.y,0.72);
+          win = lit*shape*(0.40+0.60*hh);
+          if (vW.y < 3.0) win *= 0.30;
+        }
+        vec3 wcol = mix(vec3(1.0,0.76,0.42), vec3(0.62,0.78,1.0), h21(vec2(vSeed,7.0))*0.45);
+        vec3 emissive = wcol*win*0.50;
+        /* flashelight from the shell */
+        float f = uFlash*(0.22 + 0.9*max(0.0, dot(n, normalize(vec3(0.0,0.55,0.35)))) + 0.07*max(0.0,n.y));
+        vec3 col = base + emissive*(0.65 + uFlash*1.3) + uFlashCol*f*0.38;
+        col = mix(col, vec3(0.028,0.030,0.050), smoothstep(420.0, 2400.0, vDist));
+        gl_FragColor = vec4(col, 1.0);
+      }`
+  });
+}
+
+/* ---- water ---- */
+const waterU = { uTime:{value:0}, uFlash:{value:0}, uBurst:{value:new THREE.Vector3(0,180,0)},
+                 uFlashCol:{value:new THREE.Color(1.0,0.62,0.26)} };
+const water = new THREE.Mesh(new THREE.PlaneGeometry(9000,9000,1,1), new THREE.ShaderMaterial({
+  uniforms: waterU,
+  vertexShader:`varying vec3 vW;
+    void main(){ vec4 wp = modelMatrix*vec4(position,1.0); vW = wp.xyz;
+      gl_Position = projectionMatrix*viewMatrix*wp; }`,
+  fragmentShader:`
+    precision highp float;
+    varying vec3 vW;
+    uniform float uTime, uFlash; uniform vec3 uBurst, uFlashCol;
+    float h21(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
+    void main(){
+      vec2 p = vW.xz;
+      float dist = length(p);
+      float rip = sin(p.x*0.42 + uTime*0.60 + sin(p.y*0.31)*2.1)*0.6
+                + sin(p.y*0.51 - uTime*0.44 + sin(p.x*0.27)*1.7)*0.4;
+      float rip2 = sin((p.x*0.115 - p.y*0.083) + uTime*0.9);
+      float rfade = 1.0 - smoothstep(120.0, 900.0, dist);
+      vec3 col = vec3(0.0032,0.0055,0.0115);
+      float near = 1.0 - smoothstep(200.0, 1500.0, dist);
+      col += vec3(0.0022,0.0034,0.0062)*(0.5+0.5*rip)*near*rfade;
+      /* smeared city light columns */
+      float colh = h21(vec2(floor(p.x/34.0), 3.0));
+      float cols = smoothstep(0.40, 0.92, colh);
+      float spread = smoothstep(205.0, 25.0, p.y) * smoothstep(-660.0, -150.0, p.y);
+      spread = max(spread, smoothstep(-205.0,25.0,-p.y)*smoothstep(660.0,150.0,-p.y)*0.7);
+      float wob = 0.5+0.5*sin(p.y*0.13 + uTime*0.55 + colh*40.0 + rip*1.6);
+      float refl = cols*spread*pow(wob,4.0);
+      col += vec3(1.0,0.66,0.30)*refl*0.085;
+      col += vec3(0.30,0.45,0.85)*refl*0.022;
+      /* the shell's own reflection */
+      float d = length(p - uBurst.xz*0.4);
+      float bg = exp(-d*0.0055)*uFlash;
+      col += uFlashCol*bg*(0.16 + 0.42*pow(wob,2.0));
+      float glint = pow(max(0.0, rip2*0.5+0.5), 26.0)*uFlash*rfade;
+      col += uFlashCol*glint*1.1;
+      float hz = smoothstep(320.0, 2600.0, dist);
+      col = mix(col, vec3(0.024,0.025,0.042), hz);
+      gl_FragColor = vec4(col,1.0);
+    }`
+}));
+water.rotation.x = -Math.PI/2;
+water.position.y = 0;
+scene.add(water);
+
+/* ---- land / quays / buildings ---- */
+const structural = new MeshBuilder();
+const skyline = new MeshBuilder();
+
+// main promenade quay
+structural.box(0, 0.9, 138, 900, 4.2, 46, 0, 0.1);
+structural.box(0, 1.1, 152, 900, 5.0, 12, 0, 0.2);
+// side quays
+structural.box(-520, 0.9, 260, 420, 4.0, 30, 0.25, 0.3);
+structural.box(  520, 0.9, 300, 460, 4.0, 34, -0.22, 0.4);
+// barge (our boat)
+structural.box(0, 0.35, 0, 13, 1.6, 9, 0, 0.9);
+structural.box(0, 0.95, 0, 10.5, 0.6, 7.4, 0, 0.95);
+
+// buildings behind the promenade
+for (let i=0;i<190;i++){
+  const x = RS(-980, 980);
+  const z = 205 + Math.pow(R(),0.75)*720;
+  const tall = Math.pow(R(), 3.0);
+  const h = RS(14, 44) + tall*RS(30, 78);
+  const w = RS(14, 34), d = RS(14, 34);
+  structural.box(x, 2.2 + h/2, z, w, h, d, RS(-0.25,0.25), R());
+}
+// closer low-rise between the quay and the city
+for (let i=0;i<34;i++){
+  const x = RS(-620, 620);
+  const z = RS(158, 215);
+  const h = RS(6, 20);
+  structural.box(x, 2.2 + h/2, z, RS(10,22), h, RS(10,20), RS(-0.2,0.2), R());
+}
+// a few waterfront towers
+for (let i=0;i<10;i++){
+  const x = (R()<0.5?-1:1)*RS(240, 780);
+  const h = RS(70, 130);
+  structural.box(x, 2.2 + h/2, RS(220, 300), RS(20,34), h, RS(20,34), RS(-0.3,0.3), R());
+}
+// far skyline ring
+for (let i=0;i<130;i++){
+  const a = RS(0, TAU), r = RS(1150, 2100);
+  const h = RS(25, 110);
+  skyline.box(Math.cos(a)*r, h/2, Math.sin(a)*r, RS(30,70), h, RS(30,70), RS(0,3), R());
+}
+// bridge
+const BRX = -215;
+structural.box(BRX, 17, 110, 16, 3.2, 520, 0, 0.7);
+structural.box(BRX-38, 26, 110, 3.2, 46, 3.2, 0, 0.7);
+structural.box(BRX+38, 26, 110, 3.2, 46, 3.2, 0, 0.7);
+for (let i=0;i<9;i++){
+  structural.box(BRX, 6, -140 + i*62, 7, 22, 3.4, 0, 0.6);
+}
+
+const structMesh = new THREE.Mesh(structural.geom(), cityMaterial());
+structMesh.frustumCulled = false;
+scene.add(structMesh);
+
+const skylineMat = new THREE.ShaderMaterial({
+  uniforms: cityU,
+  vertexShader:`varying vec3 vW, vN; void main(){ vec4 wp=modelMatrix*vec4(position,1.0); vW=wp.xyz; vN=normalize(mat3(modelMatrix)*normal);
+    gl_Position = projectionMatrix*viewMatrix*wp; }`,
+  fragmentShader:`precision highp float; varying vec3 vW, vN; uniform float uFlash; uniform vec3 uFlashCol;
+    void main(){
+      float h = clamp(vW.y/90.0, 0.0, 1.0);
+      vec3 c = mix(vec3(0.012,0.014,0.026), vec3(0.002,0.003,0.006), h);
+      c += uFlashCol*uFlash*0.10*(0.4+0.6*h);
+      gl_FragColor = vec4(c,1.0);
+    }`
+});
+const skylineMesh = new THREE.Mesh(skyline.geom(), skylineMat);
+skylineMesh.frustumCulled = false;
+scene.add(skylineMesh);
+
+/* ---- crowds: upturned faces as warm dots ---- */
+let crowdPts = null;
+function buildCrowd(n){
+  if (crowdPts){ scene.remove(crowdPts); crowdPts.geometry.dispose(); crowdPts.material.dispose(); }
+  const g = new THREE.BufferGeometry();
+  const p = new Float32Array(n*3), s = new Float32Array(n), sz = new Float32Array(n), cc = new Float32Array(n*3);
+  for (let i=0;i<n;i++){
+    const r = R();
+    let x,y,z;
+    if (r < 0.62){                       // promenade
+      x = RS(-460, 460); z = RS(118, 150); y = 3.4 + RS(0,2.4);
+    } else if (r < 0.82){                // quay edge, tight to the water
+      x = RS(-450, 450); z = RS(112, 120); y = 3.4;
+    } else if (r < 0.94){                // bridge deck
+      x = BRX + RS(-7,7); z = RS(-150, 360); y = 19.2;
+    } else {                             // side quays
+      const side = R()<0.5?-1:1;
+      x = side*RS(330, 720); z = RS(215, 320); y = 3.2;
+    }
+    p[i*3]=x; p[i*3+1]=y; p[i*3+2]=z;
+    s[i]=R(); sz[i]=0.7+Math.pow(R(),2)*1.5;
+    const warm = 0.82 + R()*0.18;
+    cc[i*3]=1.0*warm; cc[i*3+1]=0.62*warm+0.1*R(); cc[i*3+2]=0.30*warm;
+  }
+  g.setAttribute('position', new THREE.BufferAttribute(p,3));
+  g.setAttribute('aSeed', new THREE.BufferAttribute(s,1));
+  g.setAttribute('aSize', new THREE.BufferAttribute(sz,1));
+  g.setAttribute('aCol', new THREE.BufferAttribute(cc,3));
+  const m = new THREE.ShaderMaterial({
+    transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
+    uniforms:{ uTime:{value:0}, uFlash:{value:0}, uPix:{value:renderer.getPixelRatio()} },
+    vertexShader:`
+      attribute float aSeed, aSize; attribute vec3 aCol;
+      uniform float uTime, uFlash, uPix;
+      varying vec3 vC; varying float vA;
+      void main(){
+        vec4 mv = modelViewMatrix*vec4(position,1.0);
+        gl_Position = projectionMatrix*mv;
+        float d = max(-mv.z, 1.0);
+        float tw = 0.55+0.45*sin(uTime*(0.6+aSeed*3.4)+aSeed*57.0);
+        gl_PointSize = clamp(aSize*uPix*(300.0/d), 1.0, 9.0);
+        vC = aCol*(0.42+0.45*tw)*(0.8+uFlash*3.4);
+        vA = 0.55+0.45*tw;
+      }`,
+    fragmentShader:`
+      varying vec3 vC; varying float vA;
+      void main(){
+        vec2 q = gl_PointCoord-0.5; float r = length(q);
+        float a = pow(max(0.0,1.0-r*2.0),1.8);
+        gl_FragColor = vec4(vC, a*vA);
+      }`
+  });
+  crowdPts = new THREE.Points(g,m);
+  crowdPts.frustumCulled = false; crowdPts.renderOrder = 3;
+  scene.add(crowdPts);
+  return crowdPts;
+}
+let crowd = buildCrowd(Q.crowd);
+
+/* ---- boats ---- */
+const boats = new MeshBuilder();
+for (let i=0;i<16;i++){
+  const x = RS(-420, 420), z = RS(72, 106);
+  boats.box(x, 1.0, z, RS(4,9), RS(1.6,2.6), RS(2.4,3.6), RS(-0.15,0.15), R());
+}
+const boatMesh = new THREE.Mesh(boats.geom(), cityMaterial());
+boatMesh.frustumCulled = false;
+scene.add(boatMesh);
+
+const boatLights = (()=>{
+  const g = new THREE.BufferGeometry();
+  const n = 60, p = new Float32Array(n*3), s = new Float32Array(n), sz = new Float32Array(n), c = new Float32Array(n*3);
+  for (let i=0;i<n;i++){
+    p[i*3]=RS(-430,430); p[i*3+1]=RS(3,7); p[i*3+2]=RS(70,108);
+    s[i]=R(); sz[i]=0.9+R()*0.8;
+    c[i*3]=1.0; c[i*3+1]=0.55+R()*0.3; c[i*3+2]=0.25;
+  }
+  g.setAttribute('position', new THREE.BufferAttribute(p,3));
+  g.setAttribute('aSeed', new THREE.BufferAttribute(s,1));
+  g.setAttribute('aSize', new THREE.BufferAttribute(sz,1));
+  g.setAttribute('aCol', new THREE.BufferAttribute(c,3));
+  const m = crowd.material.clone();
+  const pts = new THREE.Points(g, m);
+  pts.frustumCulled = false;
+  return pts;
+})();
+scene.add(boatLights);
+
+/* ---- ferris wheel ---- */
+const wheel = new THREE.Group();
+wheel.position.set(205, 3.4, 178);
+const rimMat = new THREE.MeshBasicMaterial({ color:0x2a1c10 });
+const wheelGlowU = { uFlash:{value:0}, uTime:{value:0}, uColor:{value:new THREE.Color(1.0,0.72,0.38)} };
+const rim = new THREE.Mesh(new THREE.TorusGeometry(21, 0.42, 5, 72), new THREE.MeshBasicMaterial({color:0x120d08}));
+wheel.add(rim);
+const rim2 = new THREE.Mesh(new THREE.TorusGeometry(14, 0.22, 4, 64), new THREE.MeshBasicMaterial({color:0x0e0a06}));
+wheel.add(rim2);
+for (let i=0;i<12;i++){
+  const a = i/12*TAU;
+  const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.28, 21, 0.28), new THREE.MeshBasicMaterial({color:0x0d0a07}));
+  spoke.position.set(Math.cos(a)*10.5, Math.sin(a)*10.5, 0);
+  spoke.rotation.z = a - Math.PI/2;
+  wheel.add(spoke);
+  const gond = new THREE.Mesh(new THREE.BoxGeometry(2.0, 2.4, 2.0), new THREE.MeshBasicMaterial({color:0x14100a}));
+  gond.position.set(Math.cos(a)*21, Math.sin(a)*21, 0);
+  wheel.add(gond);
+}
+const wheelLights = (()=>{
+  const g = new THREE.BufferGeometry();
+  const n = 160, p = new Float32Array(n*3), s = new Float32Array(n), sz = new Float32Array(n), c = new Float32Array(n*3);
+  for (let i=0;i<n;i++){
+    const a = i/n*TAU, r = i%2 ? 21 : 14;
+    p[i*3]=Math.cos(a)*r; p[i*3+1]=Math.sin(a)*r; p[i*3+2]=0.4;
+    s[i]=R(); sz[i]=1.0+R()*0.9;
+    c[i*3]=1.0; c[i*3+1]=0.72; c[i*3+2]=0.42;
+  }
+  g.setAttribute('position', new THREE.BufferAttribute(p,3));
+  g.setAttribute('aSeed', new THREE.BufferAttribute(s,1));
+  g.setAttribute('aSize', new THREE.BufferAttribute(sz,1));
+  g.setAttribute('aCol', new THREE.BufferAttribute(c,3));
+  const m = crowd.material.clone();
+  const pts = new THREE.Points(g, m);
+  pts.frustumCulled = false;
+  return pts;
+})();
+wheel.add(wheelLights);
+scene.add(wheel);
+
+/* ==========================================================================
+   4. THE TUBE — steel, fuse glow, and the floor of white-gold fire
+   ========================================================================== */
+
+const TUBE_R = 1.72, TUBE_BASE = 0.82, TUBE_H = 3.6;
+const tubeU = { uTime:{value:0}, uFuse:{value:1}, uIgnite:{value:0}, uStreak:{value:0} };
+const tubeMat = new THREE.ShaderMaterial({
+  uniforms: tubeU, side: THREE.BackSide,
+  vertexShader:`
+    varying vec3 vL;
+    void main(){
+      vL = position;
+      gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0);
+    }`,
+  fragmentShader:`
+    precision highp float;
+    varying vec3 vL;
+    uniform float uTime, uFuse, uIgnite, uStreak;
+    void main(){
+      float y01 = clamp((vL.y + ${(TUBE_H/2).toFixed(2)}) / ${TUBE_H.toFixed(2)}, 0.0, 1.0);
+      float ang = atan(vL.z, vL.x);
+      vec3 steel = vec3(0.013,0.014,0.019);
+      float band = smoothstep(0.55,1.0,0.5+0.5*sin(vL.y*17.0));
+      steel *= 0.45 + 0.75*band;
+      steel *= 0.55 + 0.45*(0.5+0.5*sin(ang*14.0));
+      steel *= 0.82 + 0.18*sin(vL.y*143.0 + ang*3.0);   // fine grime
+      float seam = smoothstep(0.75, 1.0, 0.5+0.5*sin(ang*6.0+vL.y*0.7));
+      float rivet = smoothstep(0.90, 1.0, 0.5+0.5*sin(ang*13.0)) * smoothstep(0.55,0.8,0.5+0.5*sin(vL.y*6.2));
+      steel += vec3(0.016,0.014,0.013)*(rivet*1.6 + seam*0.9);
+      /* the fuse, burning on the wall */
+      float da = abs(mod(ang - 0.9 + 3.14159265, 6.2831853) - 3.14159265);
+      float flick = 0.62 + 0.38*sin(uTime*23.0) * sin(uTime*7.3+1.7);
+      float fuse = exp(-da*26.0) * exp(-pow((y01-0.52)*9.0,2.0)) * uFuse * flick;
+      /* crowd glow bleeding over the lip */
+      float rim = smoothstep(0.94, 1.0, y01) * (0.55 + 0.45*sin(ang*3.0 + uTime*0.6));
+      /* ignition: a floor of white-gold fire climbing the walls */
+      float flame = abs(sin(ang*9.0 + uTime*13.0)) * abs(sin(ang*23.0 - uTime*21.0 + y01*3.0));
+      float fire = uIgnite * pow(1.0-y01, 1.15) * (0.25 + 0.75*flame);
+      float streaks = uStreak * pow(fract(vL.y*0.55 - uTime*4.5 + ang*0.05), 7.0) * (1.0-y01*0.6);
+      vec3 col = steel
+        + vec3(1.0,0.52,0.13)*fuse*2.6
+        + mix(vec3(1.0,0.55,0.16), vec3(1.0,0.92,0.72), flame)*fire*4.2
+        + vec3(0.30,0.22,0.15)*rim*0.30
+        + vec3(1.0,0.72,0.34)*streaks*2.2;
+      gl_FragColor = vec4(col,1.0);
+    }`
+});
+const tube = new THREE.Mesh(new THREE.CylinderGeometry(TUBE_R, TUBE_R, TUBE_H, 44, 1, true), tubeMat);
+tube.position.set(0, TUBE_BASE + TUBE_H/2, 0);
+tube.frustumCulled = false;
+scene.add(tube);
+
+/* the fire at the bottom of the tube */
+const fireU = { uTime:{value:0}, uIgnite:{value:0} };
+const fireDisc = new THREE.Mesh(new THREE.CircleGeometry(TUBE_R*1.02, 40), new THREE.ShaderMaterial({
+  uniforms: fireU, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, side:THREE.DoubleSide,
+  vertexShader:`varying vec2 vP; void main(){ vP = position.xy; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+  fragmentShader:`
+    precision highp float; varying vec2 vP;
+    uniform float uTime, uIgnite;
+    void main(){
+      float r = length(vP)/${(TUBE_R*1.02).toFixed(2)};
+      float n = sin(vP.x*9.0+uTime*13.0)*sin(vP.y*11.0-uTime*9.0);
+      vec3 c = mix(vec3(1.0,0.95,0.85), vec3(1.0,0.55,0.12), smoothstep(0.2,0.95,r));
+      float a = uIgnite*(1.0-smoothstep(0.55,1.0,r))*(0.55+0.45*n);
+      gl_FragColor = vec4(c*a*4.0, clamp(a,0.0,1.0));
+    }`
+}));
+fireDisc.rotation.x = -Math.PI/2;
+fireDisc.position.set(0, TUBE_BASE + 0.03, 0);
+scene.add(fireDisc);
+
+/* fuse ember + mouth flash */
+const fuseGlow = makeGlow();
+fuseGlow.position.set(Math.cos(0.9)*TUBE_R*0.86, TUBE_BASE + TUBE_H*0.48, Math.sin(0.9)*TUBE_R*0.86);
+fuseGlow.material.uniforms.uSize.value = 0.5;
+fuseGlow.material.uniforms.uColor.value.setRGB(1.0,0.6,0.18);
+fuseGlow.material.uniforms.uIntensity.value = 1.6;
+scene.add(fuseGlow);
+
+const mouthFlash = makeGlow();
+mouthFlash.position.set(0, TUBE_BASE + TUBE_H + 0.3, 0);
+mouthFlash.material.uniforms.uSize.value = 14;
+mouthFlash.material.uniforms.uColor.value.setRGB(1.0,0.75,0.35);
+mouthFlash.material.uniforms.uIntensity.value = 0;
+scene.add(mouthFlash);
+
+/* ==========================================================================
+   5. CAMERA RIG — scripted choreography + your hands
+   ========================================================================== */
+
+const cam = {
+  pos: new THREE.Vector3(0.18, 2.62, 0.12),
+  yaw: Math.PI, elev: 1.14, roll: 0, fov: 72,
+  uYaw: 0, uElev: 0, uYawT: 0, uElevT: 0,   // free-look offsets
+  vel: new THREE.Vector3()
+};
+
+const launch = {
+  // velocity profile of the shell, integrated to a height curve
+  N: 512, h: new Float32Array(513), v: new Float32Array(513)
+};
+(function buildLaunchCurve(){
+  const N = launch.N;
+  let total = 0;
+  for (let i=0;i<=N;i++){
+    const u = i/N;
+    const rampA = 0.14*smoothstep(0.0, 0.12, u);
+    const rampB = 0.86*smoothstep(0.16, 0.34, u);
+    const decel = 1 - smoothstep(0.70, 1.0, u);
+    const vv = (rampA + rampB)*decel;
+    launch.v[i] = vv;
+  }
+  for (let i=1;i<=N;i++) total += launch.v[i-1]*0.5 + launch.v[i]*0.5;
+  let acc = 0;
+  launch.h[0] = 0;
+  for (let i=1;i<=N;i++){
+    acc += (launch.v[i-1] + launch.v[i])*0.5;
+    launch.h[i] = acc/total;
+  }
+})();
+function launchHeight(u){
+  u = clamp(u,0,1);
+  const f = u*launch.N, i = Math.floor(f), t = f-i;
+  return lerp(launch.h[i], launch.h[Math.min(launch.N,i+1)], t);
+}
+function launchSpeed(u){
+  u = clamp(u,0,1);
+  const f = u*launch.N, i = Math.floor(f);
+  return launch.v[i];
+}
+
+/* ==========================================================================
+   6. THE REPERTOIRE — each shell is a choreographed architecture
+   ========================================================================== */
+
+const QS = () => Q.embers/14000;
+const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3(), _v4 = new THREE.Vector3();
+
+function randDir(out){
+  const u = R()*2-1, th = R()*TAU, r = Math.sqrt(Math.max(0,1-u*u));
+  return out.set(Math.cos(th)*r, u, Math.sin(th)*r);
+}
+function fibDir(out, i, n){
+  const y = 1 - (i+0.5)*2/n;
+  const r = Math.sqrt(Math.max(0,1-y*y));
+  const th = i*2.399963229728653;
+  return out.set(Math.cos(th)*r, y, Math.sin(th)*r);
+}
+
+const COL = {
+  gold:   [1.00,0.70,0.24],
+  amber:  [1.00,0.58,0.16],
+  silver: [0.74,0.80,1.00],
+  ruby:   [1.00,0.20,0.14],
+  emerald:[0.22,1.00,0.44],
+  blue:   [0.28,0.50,1.00],
+  violet: [0.70,0.34,1.00],
+  magenta:[1.00,0.28,0.62],
+  white:  [1.00,0.94,0.82]
+};
+
+/* nested micro-crackle pops */
+function crackles(o, t0, nClusters, nStars, radius, heat){
+  for (let c=0;c<nClusters;c++){
+    randDir(_v2).multiplyScalar(radius*RS(0.18,1.05));
+    const px = o.x+_v2.x, py = o.y+_v2.y, pz = o.z+_v2.z;
+    const tb = t0 + RS(0.75, 2.5);
+    const lf = RS(0.85,1.3);
+    for (let i=0;i<nStars;i++){
+      randDir(_v3);
+      const sp = RS(4,11);
+      spawnEmber(px,py,pz, _v3.x*sp,_v3.y*sp,_v3.z*sp, 1.1, tb, lf*RS(0.7,1.2), R(),
+                 1.0,0.93,0.78, 0.24, 2, 1.0);
+    }
+  }
+}
+
+function shellWillow(o, t0, tint){
+  const N = Math.max(320, Math.round(2600*QS()));
+  const k = 0.34, base = tint || COL.gold;
+  for (let i=0;i<N;i++){
+    fibDir(_v, i, N);
+    const jj = 0.10;
+    _v.x += RS(-jj,jj); _v.y += RS(-jj,jj); _v.z += RS(-jj,jj); _v.normalize();
+    const sp = RS(13, 36);
+    spawnEmber(o.x+RS(-.7,.7), o.y+RS(-.7,.7), o.z+RS(-.7,.7),
+      _v.x*sp, _v.y*sp*0.94, _v.z*sp, k*RS(0.9,1.1), t0, RS(4.6,6.0), R(),
+      base[0], base[1], base[2], 0.55, 0, 0.94);
+  }
+  crackles(o, t0, 9, 26, 30, 0.5);
+}
+
+function shellChrysanthemum(o, t0, tint){
+  const N = Math.max(420, Math.round(5200*QS()));
+  const k = 0.66, base = tint || COL.ruby;
+  for (let i=0;i<N;i++){
+    fibDir(_v, i, N);
+    const ph = R()*TAU;
+    _v.x += Math.cos(ph)*0.035; _v.y += Math.sin(ph)*0.035; _v.z += RS(-0.035,0.035);
+    _v.normalize();
+    const sp = RS(42,54);
+    spawnEmber(o.x,o.y,o.z, _v.x*sp, _v.y*sp, _v.z*sp, k*RS(0.94,1.06), t0,
+      RS(3.5,4.5), R(), base[0], base[1], base[2], 0.36, 0, 0.88);
+  }
+  crackles(o, t0, 12, 30, 26, 0.6);
+}
+
+function shellPalm(o, t0){
+  const N = Math.max(22, Math.round(62*QS()));
+  const k = 0.55, life = 0.62;
+  const branches = [];
+  for (let i=0;i<N;i++){
+    const a = R()*TAU, tilt = Math.pow(R(),0.55)*0.92;
+    const dx = Math.cos(a)*Math.sin(tilt), dy = Math.cos(tilt), dz = Math.sin(a)*Math.sin(tilt);
+    const sp = RS(26,38);
+    spawnEmber(o.x,o.y,o.z, dx*sp, dy*sp, dz*sp, k, t0, life*RS(0.9,1.1), R(),
+      1.0,0.66,0.22, 1.05, 0, 0.92);
+    branches.push([dx*sp, dy*sp, dz*sp]);
+  }
+  const tb = t0 + 0.56;
+  for (const b of branches){
+    emberPos(_v, o.x,o.y,o.z, b[0],b[1],b[2], k, 0.56);
+    const nf = 8;
+    const base = R()*TAU;
+    for (let j=0;j<nf;j++){
+      const a = base + j/nf*TAU + RS(-0.25,0.25);
+      const tilt = RS(0.95,1.62);
+      const sp = RS(11,19);
+      const dx = Math.cos(a)*Math.sin(tilt), dy = Math.cos(tilt)*0.85+0.10, dz = Math.sin(a)*Math.sin(tilt);
+      spawnEmber(_v.x,_v.y,_v.z, dx*sp, dy*sp, dz*sp, 0.78, tb, RS(2.1,2.9), R(),
+        1.0,0.70,0.26, 0.42, 0, 0.9);
+    }
+  }
+  for (const b of branches){
+    emberPos(_v, o.x,o.y,o.z, b[0],b[1],b[2], k, 0.56);
+    const nf = 6;
+    const base = R()*TAU;
+    for (let j=0;j<nf;j++){
+      const a = base + j/nf*TAU + RS(-0.3,0.3);
+      const tilt = RS(1.15,1.9);
+      const sp = RS(9,15);
+      const dx = Math.cos(a)*Math.sin(tilt), dy = Math.cos(tilt)*0.9-0.12, dz = Math.sin(a)*Math.sin(tilt);
+      spawnEmber(_v.x,_v.y,_v.z, dx*sp, dy*sp, dz*sp, 0.85, tb+0.12, RS(2.0,2.7), R(),
+        1.0,0.62,0.22, 0.38, 0, 0.9);
+    }
+  }
+  crackles(o, t0, 6, 24, 34, 0.5);
+}
+
+function shellCrossette(o, t0){
+  const N = Math.max(36, Math.round(112*QS()));
+  const k = 0.95, life = 0.96;
+  const kids = [];
+  for (let i=0;i<N;i++){
+    fibDir(_v, i, N);
+    const sp = RS(40,50);
+    spawnEmber(o.x,o.y,o.z, _v.x*sp, _v.y*sp, _v.z*sp, k, t0, life, R(),
+      1.0,0.55,0.16, 0.80, 0, 0.85);
+    kids.push([_v.x*sp, _v.y*sp, _v.z*sp]);
+  }
+  const tb = t0 + 0.96;
+  for (const kid of kids){
+    emberPos(_v, o.x,o.y,o.z, kid[0],kid[1],kid[2], k, 0.96);
+    _v2.set(kid[0],kid[1],kid[2]).normalize();
+    _v3.set(0,1,0); if (Math.abs(_v2.y) > 0.92) _v3.set(1,0,0);
+    _v4.crossVectors(_v2,_v3).normalize();
+    _v3.crossVectors(_v2,_v4).normalize();
+    for (let j=0;j<4;j++){
+      const a = j*TAU/4 + RS(-0.15,0.15);
+      const ca = Math.cos(a), sa = Math.sin(a);
+      const sp = RS(15,23);
+      const vx = (_v4.x*ca + _v3.x*sa)*sp;
+      const vy = (_v4.y*ca + _v3.y*sa)*sp;
+      const vz = (_v4.z*ca + _v3.z*sa)*sp;
+      spawnEmber(_v.x,_v.y,_v.z, vx,vy,vz, 1.25, tb, RS(1.9,2.6), R(),
+        1.0,0.86,0.58, 0.50, 0, 0.65);
+    }
+  }
+}
+
+function shellRing(o, t0){
+  const N = Math.max(200, Math.round(1300*QS()));
+  const k = 0.88, life = 3.5;
+  const nrm = _v2.set(RS(-0.16,0.16), 1, RS(-0.16,0.16)).normalize();
+  const b1 = new THREE.Vector3().crossVectors(nrm, new THREE.Vector3(0,0,1)).normalize();
+  const b2 = new THREE.Vector3().crossVectors(nrm, b1).normalize();
+  for (let i=0;i<N;i++){
+    const a = i/N*TAU + RS(-0.008,0.008);
+    const sp = RS(40,44);
+    const ca = Math.cos(a), sa = Math.sin(a);
+    const dx = b1.x*ca + b2.x*sa, dy = b1.y*ca + b2.y*sa, dz = b1.z*ca + b2.z*sa;
+    spawnEmber(o.x,o.y,o.z, dx*sp, dy*sp, dz*sp, k, t0, life*RS(0.9,1.06), R(),
+      0.86,0.92,1.0, 0.50, 0, 1.0);
+  }
+  crackles(o, t0, 8, 24, 18, 0.55);
+}
+
+function shellStrobe(o, t0){
+  const N = Math.max(240, Math.round(1400*QS()));
+  const k = 0.85, life = 4.4;
+  for (let i=0;i<N;i++){
+    fibDir(_v, i, N);
+    const sp = RS(30,38);
+    spawnEmber(o.x,o.y,o.z, _v.x*sp, _v.y*sp, _v.z*sp, k, t0, life*RS(0.9,1.1), R(),
+      0.85,0.90,1.0, 0.50, 1, 1.0);
+  }
+}
+
+function shellFinale(o, t0){
+  // three successive breaks, nested inside one another, camera at the heart of all three
+  const A = { x:o.x, y:o.y, z:o.z };
+  shellWillow(A, t0);
+  const N2 = Math.max(160, Math.round(820*QS()));
+  for (let i=0;i<N2;i++){
+    fibDir(_v, i, N2);
+    const sp = RS(24,32);
+    spawnEmber(o.x, o.y+2, o.z, _v.x*sp, _v.y*sp, _v.z*sp, 1.45, t0+1.15, RS(3.2,4.2), R(),
+      COL.silver[0], COL.silver[1], COL.silver[2], 0.42, 0, 1.0);
+  }
+  const N3 = Math.max(120, Math.round(640*QS()));
+  for (let i=0;i<N3;i++){
+    fibDir(_v, i, N3);
+    const sp = RS(12,18);
+    spawnEmber(o.x, o.y-3, o.z, _v.x*sp, _v.y*sp, _v.z*sp, 1.9, t0+2.3, RS(2.4,3.2), R(),
+      COL.ruby[0], COL.ruby[1], COL.ruby[2], 0.36, 2, 0.8);
+  }
+  crackles(o, t0, 14, 26, 26, 0.6);
+}
+
+const SHELL_ORDER = ['willow','chrysanthemum','palm','crossette','ring','strobe','willow','chrysanthemum','crossette','strobe','ring','finale'];
+const SHELL_LABEL = { willow:'GOLDEN WILLOW', chrysanthemum:'CHRYSANTHEMUM', palm:'PALM',
+  crossette:'CROSSETTE', ring:'RING', strobe:'STROBE', finale:'FINALE — TRIPLE BREAK' };
+
+function spawnBurst(type, o, t0){
+  switch(type){
+    case 'willow':        shellWillow(o,t0); return;
+    case 'chrysanthemum': shellChrysanthemum(o,t0,[COL.amber,COL.gold,COL.ruby,COL.emerald,COL.magenta,COL.blue,COL.white][Math.floor(R()*7)]); return;
+    case 'palm':          shellPalm(o,t0); return;
+    case 'crossette':     shellCrossette(o,t0); return;
+    case 'ring':          shellRing(o,t0); return;
+    case 'strobe':        shellStrobe(o,t0); return;
+    case 'finale':        shellFinale(o,t0); return;
+  }
+}
+
+/* a rising shell in the distance — pre-baked strand of births */
+function distantShell(x0,y0,z0, tStart, dur, peak){
+  const n = 26;
+  for (let i=0;i<n;i++){
+    const u = i/n;
+    const t = tStart + u*dur;
+    const y = y0 + (peak-y0)*Math.pow(u,2.3);
+    spawnEmber(x0+RS(-1,1), y, z0+RS(-1,1), RS(-2,2), RS(-3,1), RS(-2,2), 0.9, t, RS(0.8,1.4), R(),
+      1.0,0.72,0.35, 0.34, 0, 0.8);
+  }
+}
+
+/* ==========================================================================
+   7. CHOREOGRAPHY — tube, ignition, climb, detonation, bloom, fall, repeat
+   ========================================================================== */
+
+let breatheDur = 6.0;
+let tailAcc = 0, smokeAcc = 0;
+let nextShellType = 'willow';
+let distantDone = false, mouthDone = false;
+const nudgeDir = new THREE.Vector3(1,0,0);
+const flyOff = new THREE.Vector3();
+const shellPos = new THREE.Vector3();
+
+function pickShell(){
+  if (S.shellPref !== 'auto') return S.shellPref;
+  return SHELL_ORDER[S.shellIdx % SHELL_ORDER.length];
+}
+
+let fpsEMA = 60, autoQ = true, qApplying = false;
+
+function enterTube(){
+  if (!qApplying && autoQ && fpsEMA < 34 && QNAME !== 'low'){
+    qApplying = true;
+    setQuality(QNAME === 'high' ? 'medium' : 'low');
+    qApplying = false;
+    return;
+  }
+  cursor = 0; highWater = 0; if (emberGeo) emberGeo.instanceCount = 0;
+  dA = Infinity; dB = -Infinity;
+  S.phase = 'tube'; S.t = 0; S.fbT = 0;      // fwT keeps running: last shell's smoke lingers
+  S.burstType = pickShell();
+  S.camMode = 'ride';
+  S.shock = 0; shockMesh.visible = false;
+  S.flash = 0; S.domFlash = 0;
+  flyOff.set(0,0,0);
+  cam.pos.set(0.18, 2.62, 0.12);
+  cam.yaw = Math.PI; cam.elev = 1.14; cam.roll = 0; cam.fov = 72;
+  cam.uYawT = 0; cam.uElevT = 0; cam.uYaw = 0; cam.uElev = 0;
+  distantDone = false; mouthDone = false;
+  tailAcc = 0; smokeAcc = 0;
+  breatheDur = 6.0 * S.cadence;
+  // distant shells already climbing in other parts of the harbour
+  for (let i=0;i<3;i++){
+    const a = R()*TAU, r = RS(280, 620);
+    distantShell(Math.cos(a)*r, 4, Math.sin(a)*r, 0.3+R()*1.2, RS(2.4,3.4), RS(140,210));
+  }
+}
+
+function ignition(){
+  S.phase = 'launch'; S.t = 0.0001;
+  S.shellIdx++;
+  S.domFlash = 0.55;
+  mouthFlash.material.uniforms.uIntensity.value = 3.0;
+  for (let i=0;i<6;i++) spawnSmoke(0, TUBE_BASE+0.4, 0, RS(2.2,4.0), RS(3.0,4.4), RS(-.6,.6), RS(3,7), RS(-.6,.6));
+}
+
+function detonate(){
+  S.burstT0 = S.fwT;
+  S.burstPos.copy(camRidePos());          // the shell is where it is, not where the camera points
+  S.phase = 'burst'; S.t = 0; S.fbT = 0;
+  spawnBurst(S.burstType, S.burstPos, S.fwT + 0.021);
+  S.flash = 1; S.domFlash = 0.95; S.shock = 1;
+  randDir(nudgeDir); nudgeDir.y *= 0.5; nudgeDir.normalize();
+  shockMesh.visible = true;
+  shockMesh.position.copy(S.burstPos);
+  shockMesh.scale.setScalar(1);
+  // the burst's own smoke shell — cast out with the stars
+  for (let i=0;i<14;i++){
+    randDir(_v2).multiplyScalar(RS(18,64));
+    spawnSmoke(S.burstPos.x+_v2.x, S.burstPos.y+_v2.y, S.burstPos.z+_v2.z,
+      RS(5,12), RS(6.0,9.0), _v2.x*RS(0.10,0.40), RS(0.2,1.4), _v2.z*RS(0.10,0.40));
+  }
+  if (S.sound) audioBurst(S.burstType);
+}
+
+/* ---- per-frame choreography ---- */
+function updateShow(dt){
+  if (S.phase === 'tube'){
+    S.t += dt; S.fwT += dt;
+    if (S.t >= T_TUBE){ ignition(); }
+  } else if (S.phase === 'launch'){
+    S.t += dt; S.fwT += dt;
+    // sparking tail + smoke thread of the lifted charge
+    const sp = launchSpeed(S.t/T_LAUNCH);
+    const sx = (S.camMode === 'crowd') ? camRidePos().x : cam.pos.x;
+    const sy = (S.camMode === 'crowd') ? camRidePos().y : cam.pos.y;
+    const sz = (S.camMode === 'crowd') ? camRidePos().z : cam.pos.z;
+    tailAcc += dt*(60 + 90*sp);
+    while (tailAcc >= 1){
+      tailAcc -= 1;
+      const j = 0.9;
+      spawnEmber(sx+RS(-j,j), sy+RS(-j,j), sz+RS(-j,j),
+        RS(-3,3), -RS(5,18), RS(-3,3), 1.3, S.fwT, RS(0.35,0.95), R(),
+        1.0, 0.66, 0.28, 0.30, 0, 0.9);
+    }
+    smokeAcc += dt*(1.5 + 3*sp);
+    while (smokeAcc >= 1){
+      smokeAcc -= 1;
+      spawnSmoke(sx+RS(-1.0,1.0), sy-2.5, sz+RS(-1.0,1.0),
+        RS(2.4,4.6), RS(2.6,4.0), RS(-.4,.4), RS(-1,1.2), RS(-.4,.4));
+    }
+    if (S.t >= T_LAUNCH) detonate();
+  } else if (S.phase === 'burst'){
+    const ts = S.photo ? 0 : 1/S.dil;
+    S.t += dt*ts; S.fwT += dt*ts;
+    S.fbT = S.fwT - S.burstT0;
+    if (S.fbT > 1.8 && S.fbT < 4.6 && Math.random() < dt*1.2){
+      randDir(_v2).multiplyScalar(RS(20,60));
+      spawnSmoke(S.burstPos.x+_v2.x, S.burstPos.y+_v2.y, S.burstPos.z+_v2.z,
+        RS(12,26), RS(7,10), _v2.x*RS(-0.02,0.12), RS(-0.3,0.8), _v2.z*RS(-0.02,0.12));
+    }
+    if (S.fbT >= T_BURST){
+      S.phase = 'breathe'; S.t = 0;
+    }
+  } else if (S.phase === 'breathe'){
+    S.t += dt;
+    S.fwT += dt*(S.photo ? 0 : 1);
+    if (!distantDone && S.t > breatheDur*0.12){
+      distantDone = true;
+      const a = R()*TAU, r = RS(170, 380);
+      distantShell(Math.cos(a)*r, 4, Math.sin(a)*r, S.fwT, 2.8, RS(150,200));
+      const a2 = R()*TAU, r2 = RS(320, 560);
+      distantShell(Math.cos(a2)*r2, 4, Math.sin(a2)*r2, S.fwT+1.4, 3.0, RS(170,220));
+    }
+    if (!mouthDone && S.t > breatheDur*0.55){
+      mouthDone = true;
+      mouthFlash.material.uniforms.uIntensity.value = 2.2;
+      for (let i=0;i<5;i++)
+        spawnSmoke(0, TUBE_BASE+1.0, 0, RS(2.0,3.6), RS(2.4,3.6), RS(-.5,.5), RS(3,6), RS(-.5,.5));
+    }
+    if (S.t >= breatheDur){ enterTube(); }
+  }
+}
+
+/* ---- camera ---- */
+const _dir = new THREE.Vector3();
+function updateCamera(dt){
+  const u_launch = S.t / T_LAUNCH;
+
+  if (S.camMode === 'crowd'){
+    const target = (S.phase === 'launch') ? camRidePos() : (S.phase === 'burst' ? S.burstPos : S.burstPos);
+    cam.pos.set(118, 6.6, 154);
+    const wob = Math.sin(performance.now()*0.0007)*0.06;
+    _dir.copy(target).sub(cam.pos).normalize();
+    const dy = _dir.y;
+    cam.yaw = Math.atan2(-_dir.x, -_dir.z);
+    cam.elev = Math.min(Math.asin(clamp(dy,-1,1)), 0.36);
+    cam.roll = wob*0.4;
+    cam.fov = lerp(cam.fov, 76, 1-Math.exp(-dt*3));
+  } else if (S.phase === 'tube'){
+    cam.pos.set(0.18 + Math.sin(S.t*0.85)*0.035, 2.62 + Math.sin(S.t*1.31)*0.022, 0.12 + Math.cos(S.t*0.7)*0.03);
+    cam.yaw = Math.PI + Math.sin(S.t*0.41)*0.03;
+    cam.elev = 1.14 + Math.sin(S.t*0.63)*0.015;
+    cam.roll *= 0.9;
+    cam.fov = 72;
+  } else if (S.phase === 'launch'){
+    const u = clamp(u_launch, 0, 1);
+    const h = launchHeight(u)*S.apex;
+    const sp = launchSpeed(u);
+    const shake = 0.055 + 0.30*sp*(1.0 - 0.55*u);
+    const t = S.t;
+    cam.pos.set(
+      Math.sin(t*51.0)*shake*0.45 + Math.sin(t*23.0)*shake*0.3,
+      2.62 + h + Math.sin(t*67.0)*shake*0.6,
+      Math.cos(t*57.0)*shake*0.45 + Math.cos(t*31.0)*shake*0.3
+    );
+    cam.yaw += 0.62*(1-u)*(1-u)*dt;
+    let e;
+    if (u < 0.035)      e = lerp(1.14, 0.42, smoothstep(0.0, 0.035, u));
+    else if (u < 0.095) e = lerp(0.42, 0.34, smoothstep(0.035, 0.095, u));
+    else if (u < 0.20)  e = lerp(0.34, 1.16, smoothstep(0.095, 0.20, u));
+    else {
+      e = lerp(1.16, -0.60, smoothstep(0.20, 0.62, u));
+      e = lerp(e, -0.14, smoothstep(0.70, 1.0, u));
+    }
+    cam.elev = e;
+    cam.roll = -0.10*Math.sin(u*Math.PI) - 0.04*Math.sin(t*7.0)*sp;
+    cam.fov = lerp(lerp(72, 96, smoothstep(0.0,0.055,u)), 88, smoothstep(0.06,0.25,u));
+    cam.fov = lerp(cam.fov, 67, smoothstep(0.58,1.0,u));
+  } else if (S.phase === 'burst'){
+    const fb = S.fbT;
+    const nud = Math.exp(-fb*5.0)*4.5;
+    cam.pos.copy(S.burstPos);
+    cam.pos.x += Math.sin(fb*0.52)*1.15 + nudgeDir.x*nud;
+    cam.pos.y += -fb*1.85 + Math.sin(fb*0.83)*0.72 + nudgeDir.y*nud;
+    cam.pos.z += Math.cos(fb*0.44)*1.15 + nudgeDir.z*nud;
+    cam.roll = Math.sin(fb*0.31)*0.05 + Math.exp(-fb*4.0)*0.10;
+    cam.fov = 74 + 15*Math.exp(-fb*4.5);
+    // the camera very slowly turns to face the mooring, then drifts
+    cam.yaw += (Math.PI - cam.yaw)*Math.min(1, dt*0.13);
+    cam.elev = lerp(cam.elev, -0.16, Math.min(1, dt*0.22));
+    S.shock = Math.exp(-fb*3.0);
+  } else if (S.phase === 'breathe'){
+    const u = clamp(S.t/breatheDur, 0, 1);
+    const p = 0.30*u + 0.70*Math.pow(u, 2.4);
+    const y0 = S.burstPos.y - 9.0;
+    const dive = smoothstep(0.86, 1.0, u);
+    cam.pos.set(
+      lerp(Math.sin(S.t*0.85)*4.0, 0.18, dive),
+      lerp(y0, TUBE_BASE + 1.80, p),
+      lerp(Math.cos(S.t*0.72)*4.0, 0.12, dive)
+    );
+    cam.elev = lerp(-0.62, 1.14, smoothstep(0.90, 1.0, u));
+    cam.yaw += (Math.PI - cam.yaw)*Math.min(1, dt*0.6);
+    cam.roll = Math.sin(S.t*0.5)*0.07*(1-u);
+    cam.fov = lerp(76, 72, u);
+    S.shock = 0;
+  }
+
+  // ---- free look + free fly ----
+  const k = 1 - Math.exp(-dt*13);
+  cam.uYaw += (cam.uYawT - cam.uYaw)*k;
+  cam.uElev += (cam.uElevT - cam.uElev)*k;
+
+  if (S.freeFly){
+    const speed = (keys['shift'] ? 26 : 9);
+    const e = new THREE.Euler(cam.elev + cam.uElev, cam.yaw + cam.uYaw, 0, 'YXZ');
+    const fwd = _dir.set(0,0,-1).applyEuler(e);
+    const right = new THREE.Vector3(1,0,0).applyEuler(e);
+    const up = new THREE.Vector3(0,1,0);
+    const mv = new THREE.Vector3();
+    if (keys['w']) mv.add(fwd);
+    if (keys['s']) mv.sub(fwd);
+    if (keys['d']) mv.add(right);
+    if (keys['a']) mv.sub(right);
+    if (keys['e']) mv.add(up);
+    if (keys['q']) mv.sub(up);
+    if (mv.lengthSq() > 0) flyOff.addScaledVector(mv.normalize(), speed*dt);
+  }
+
+  cam.pos.add(camBias);
+  camera.position.copy(cam.pos).add(flyOff);
+  camera.rotation.set(clamp(cam.elev + elevBias + cam.uElev, -1.52, 1.52), cam.yaw + cam.uYaw, cam.roll, 'YXZ');
+  if (Math.abs(camera.fov - cam.fov) > 0.01){
+    camera.fov = cam.fov;
+    camera.updateProjectionMatrix();
+  }
+}
+
+const _ridePos = new THREE.Vector3();
+function camRidePos(){
+  const u = clamp(S.t/T_LAUNCH, 0, 1);
+  _ridePos.set(0, 2.62 + launchHeight(u)*S.apex, 0);
+  return _ridePos;
+}
+
+/* ==========================================================================
+   8. PROCEDURAL AUDIO — roar, whistle, thump, rumble. Nothing but math.
+   ========================================================================== */
+const audio = { ctx:null, master:null, noise:null, on:false };
+function initAudio(){
+  if (audio.ctx) return;
+  const C = window.AudioContext || window.webkitAudioContext;
+  if (!C) return;
+  audio.ctx = new C();
+  audio.master = audio.ctx.createGain();
+  audio.master.gain.value = 0.0;
+  audio.master.connect(audio.ctx.destination);
+  const len = audio.ctx.sampleRate*2;
+  const buf = audio.ctx.createBuffer(1, len, audio.ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i=0;i<len;i++) d[i] = Math.random()*2-1;
+  audio.noise = buf;
+}
+function noiseSrc(){
+  const s = audio.ctx.createBufferSource();
+  s.buffer = audio.noise; s.loop = true;
+  s.playbackRate.value = 0.8 + Math.random()*0.4;
+  return s;
+}
+function audioLaunch(){
+  if (!audio.on) return;
+  const c = audio.ctx, t = c.currentTime;
+  const s = noiseSrc();
+  const bp = c.createBiquadFilter(); bp.type='bandpass'; bp.Q.value = 1.1;
+  bp.frequency.setValueAtTime(300, t);
+  bp.frequency.exponentialRampToValueAtTime(2600, t+0.30);
+  bp.frequency.exponentialRampToValueAtTime(500, t+3.2);
+  const g = c.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(0.42, t+0.06);
+  g.gain.exponentialRampToValueAtTime(0.10, t+1.3);
+  g.gain.exponentialRampToValueAtTime(0.0008, t+3.3);
+  s.connect(bp); bp.connect(g); g.connect(audio.master);
+  s.start(t); s.stop(t+3.4);
+  const o = c.createOscillator(); o.type='sine';
+  o.frequency.setValueAtTime(620, t);
+  o.frequency.exponentialRampToValueAtTime(1550, t+3.1);
+  const og = c.createGain();
+  og.gain.setValueAtTime(0.0001, t);
+  og.gain.linearRampToValueAtTime(0.035, t+0.5);
+  og.gain.exponentialRampToValueAtTime(0.0008, t+3.2);
+  o.connect(og); og.connect(audio.master);
+  o.start(t); o.stop(t+3.3);
+}
+function audioBurst(){
+  if (!audio.on) return;
+  const c = audio.ctx, t = c.currentTime;
+  const o = c.createOscillator(); o.type='sine';
+  o.frequency.setValueAtTime(120, t);
+  o.frequency.exponentialRampToValueAtTime(26, t+0.55);
+  const g = c.createGain();
+  g.gain.setValueAtTime(0.9, t);
+  g.gain.exponentialRampToValueAtTime(0.0006, t+0.95);
+  o.connect(g); g.connect(audio.master);
+  o.start(t); o.stop(t+1.0);
+  const s = noiseSrc();
+  const hp = c.createBiquadFilter(); hp.type='highpass'; hp.frequency.value = 850;
+  const ng = c.createGain();
+  ng.gain.setValueAtTime(0.5, t); ng.gain.exponentialRampToValueAtTime(0.0006, t+0.32);
+  s.connect(hp); hp.connect(ng); ng.connect(audio.master); s.start(t); s.stop(t+0.36);
+  const s2 = noiseSrc();
+  const lp = c.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value = 300;
+  const g2 = c.createGain();
+  g2.gain.setValueAtTime(0.0001, t);
+  g2.gain.linearRampToValueAtTime(0.3, t+0.07);
+  g2.gain.exponentialRampToValueAtTime(0.0006, t+3.4);
+  s2.connect(lp); lp.connect(g2); g2.connect(audio.master); s2.start(t); s2.stop(t+3.5);
+}
+
+/* ==========================================================================
+   9. HANDS — look, fly, presets, controls
+   ========================================================================== */
+const keys = {};
+const cv = canvas;
+let dragging = false, lastX = 0, lastY = 0;
+
+cv.addEventListener('pointerdown', e=>{
+  dragging = true; lastX = e.clientX; lastY = e.clientY;
+  cv.classList.add('drag'); cv.setPointerCapture(e.pointerId);
+  if (!audio.ctx) { initAudio(); }
+  if (audio.ctx && audio.ctx.state === 'suspended') audio.ctx.resume();
+});
+cv.addEventListener('pointermove', e=>{
+  if (!dragging) return;
+  const dx = e.clientX-lastX, dy = e.clientY-lastY;
+  lastX = e.clientX; lastY = e.clientY;
+  cam.uYawT   = clamp(cam.uYawT   - dx*0.0030, -2.6, 2.6);
+  cam.uElevT  = clamp(cam.uElevT  - dy*0.0026, -1.15, 1.15);
+});
+const endDrag = ()=>{ dragging = false; cv.classList.remove('drag'); };
+cv.addEventListener('pointerup', endDrag);
+cv.addEventListener('pointercancel', endDrag);
+cv.addEventListener('pointerleave', endDrag);
+
+addEventListener('keydown', e=>{
+  const k = e.key.toLowerCase();
+  keys[k] = true;
+  if (k === 'f') toggleFly();
+  if (k === 'p') togglePhoto();
+  if (k === 'r') enterTube();
+  if (['w','a','s','d','q','e'].includes(k)) e.preventDefault();
+});
+addEventListener('keyup', e=>{ keys[e.key.toLowerCase()] = false; });
+
+/* ---- presets ---- */
+const camBias = new THREE.Vector3();
+let elevBias = 0;
+
+function jumpBurst(type, fb, dy, dz){
+  cursor = 0; highWater = 0; if (emberGeo) emberGeo.instanceCount = 0;
+  dA = Infinity; dB = -Infinity;
+  smokeCursor = 0; if (smokeGeo) smokeGeo.instanceCount = 0;
+  S.camMode = 'ride';
+  S.burstType = type;
+  S.burstPos.set(0, S.apex + 2.62, 0);
+  S.burstT0 = S.fwT - fb;
+  S.phase = 'burst'; S.t = 0; S.fbT = fb;
+  spawnBurst(type, S.burstPos, S.burstT0 + 0.021);
+  cam.pos.copy(S.burstPos);
+  cam.elev = -0.18; cam.yaw = Math.PI; cam.roll = 0; cam.fov = 76;
+  cam.uYawT = 0; cam.uElevT = 0;
+  flyOff.set(0,0,0);
+  camBias.set(0, dy||0, dz||0);
+  elevBias = 0;
+  shockMesh.visible = false;
+  S.shock = 0;
+  S.flash = Math.exp(-fb*2.6);
+  S.domFlash = fb < 0.2 ? 0.7 : 0;
+  breatheDur = 6.0*S.cadence;
+}
+
+function preset(name){
+  S.photo = false; document.getElementById('bars').classList.remove('on');
+  document.getElementById('hud').classList.remove('photo');
+  camBias.set(0,0,0); elevBias = 0;
+  if (name === 'tube'){ enterTube(); return; }
+  if (name === 'apex'){
+    enterTube();
+    S.phase = 'launch'; S.t = T_LAUNCH*0.955;
+    cam.pos.set(0, 2.62 + S.apex*0.995, 0);
+    cam.elev = -0.14; cam.yaw = Math.PI;
+    return;
+  }
+  if (name === 'bloom'){ jumpBurst('chrysanthemum', 0.55); return; }
+  if (name === 'crossette'){ jumpBurst('crossette', 1.25); return; }
+  if (name === 'ring'){ jumpBurst('ring', 0.95); return; }
+  if (name === 'willow'){ jumpBurst('willow', 1.9, -52, -26); elevBias = 0.60; return; }
+  if (name === 'crowd'){
+    enterTube();
+    S.camMode = 'crowd';
+    cam.pos.set(118, 6.6, 154);
+    return;
+  }
+}
+
+/* ---- UI ---- */
+const el = id => document.getElementById(id);
+const hud = el('hud');
+const dilSlider = el('dil'), dilVal = el('dilv');
+
+function paintSlider(){
+  const p = (dilSlider.value - dilSlider.min)/(dilSlider.max - dilSlider.min)*100;
+  dilSlider.style.setProperty('--p', p+'%');
+}
+dilSlider.value = 5; paintSlider();
+dilSlider.addEventListener('input', ()=>{
+  S.dil = parseFloat(dilSlider.value);
+  dilVal.textContent = '×' + S.dil.toFixed(1);
+  paintSlider();
+});
+dilVal.textContent = '×5.0';
+
+el('shell').addEventListener('change', e=>{ S.shellPref = e.target.value; });
+el('cad').addEventListener('change', e=>{ S.cadence = parseFloat(e.target.value); breatheDur = 6.0*S.cadence; });
+
+const flyBtn = el('fly');
+const photoBtn = el('photo');
+const soundBtn = el('sound');
+
+function toggleFly(){
+  S.freeFly = !S.freeFly;
+  flyBtn.classList.toggle('act', S.freeFly);
+  if (!S.freeFly) flyOff.multiplyScalar(0);
+}
+function togglePhoto(){
+  S.photo = !S.photo;
+  photoBtn.classList.toggle('act', S.photo);
+  el('bars').classList.toggle('on', S.photo);
+  hud.classList.toggle('photo', S.photo);
+}
+flyBtn.addEventListener('click', toggleFly);
+photoBtn.addEventListener('click', togglePhoto);
+el('reset').addEventListener('click', ()=>{ enterTube(); });
+soundBtn.addEventListener('click', ()=>{
+  initAudio();
+  if (!audio.ctx) return;
+  if (audio.ctx.state === 'suspended') audio.ctx.resume();
+  audio.on = !audio.on;
+  audio.master.gain.setTargetAtTime(audio.on ? 0.55 : 0.0, audio.ctx.currentTime, 0.15);
+  soundBtn.textContent = audio.on ? 'Sound on' : 'Sound off';
+  soundBtn.classList.toggle('act', audio.on);
+});
+document.querySelectorAll('#presets button, .presets button').forEach(b=>{
+  b.addEventListener('click', ()=> preset(b.dataset.p));
+});
+el('qual').addEventListener('change', e=>{ autoQ = false; setQuality(e.target.value); });
+
+/* ==========================================================================
+   10. RENDER LOOP
+   ========================================================================== */
+let composer = null, bloomPass = null;
+function setupComposer(){
+  if (composer){ try{ composer.dispose(); }catch(err){} composer = null; bloomPass = null; }
+  if (!Q.bloom) return;
+  composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.52, 0.80, 0.78);
+  composer.addPass(bloomPass);
+  composer.addPass(new OutputPass());
+  composer.setPixelRatio(renderer.getPixelRatio());
+  composer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function setQuality(name){
+  QNAME = name; Q = QUALITY[name];
+  buildEmbers(); buildSmoke();
+  if (crowd){ scene.remove(crowd); crowd.geometry.dispose(); crowd.material.dispose(); }
+  crowd = buildCrowd(Q.crowd);
+  setupComposer();
+  enterTube();
+}
+
+function onResize(){
+  const w = window.innerWidth, h = window.innerHeight;
+  camera.aspect = w/h; camera.updateProjectionMatrix();
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+  renderer.setSize(w, h, false);
+  if (composer){ composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(w,h); }
+}
+addEventListener('resize', onResize);
+
+const flashEl = el('flash');
+const fpsEl = el('fps');
+let last = performance.now(), realT = 0, fpsAcc = 0, fpsN = 0;
+
+function tick(){
+  requestAnimationFrame(tick);
+  const now = performance.now();
+  let dt = (now - last)/1000; last = now;
+  dt = Math.min(dt, 0.05);
+  realT += dt;
+
+  /* --- choreography --- */
+  updateShow(S.photo ? 0 : dt);
+  updateCamera(dt);
+
+  flushDirty();
+
+  /* --- derived intensities --- */
+  if (S.phase === 'burst'){
+    S.flash = Math.exp(-S.fbT*2.7)*(0.78 + 0.22*Math.sin(S.fbT*34.0));
+  } else {
+    S.flash = Math.max(0, S.flash - dt*3.5);
+  }
+  S.domFlash = Math.max(0, S.domFlash - dt*6.5);
+  flashEl.style.opacity = (S.domFlash*0.78).toFixed(3);
+
+  /* --- uniforms --- */
+  EU.uTime.value = S.fwT;
+  SMU.uTime.value = S.fwT;
+  SMU.uFlash.value = S.flash;
+  if (S.phase === 'burst'){
+    SMU.uBurst.value.copy(S.burstPos);
+    SMU.uHeat.value = Math.exp(-S.fbT*1.4);
+  } else if (S.phase === 'launch'){
+    SMU.uHeat.value = lerp(SMU.uHeat.value, 1.0, Math.min(1, dt*3));
+  } else SMU.uHeat.value *= 0.90;
+
+  skyU.uFlash.value = S.flash*0.5;
+  cityU.uFlash.value = S.flash;
+  cityU.uTime.value = realT;
+  waterU.uFlash.value = S.flash;
+  waterU.uTime.value = realT;
+  if (S.phase === 'burst') waterU.uBurst.value.copy(S.burstPos);
+
+  stars.material.uniforms.uTime.value = realT;
+  const climbBoost = (S.phase === 'launch') ? 1 + 1.4*clamp(S.t/T_LAUNCH,0,1) : 1;
+  stars.material.uniforms.uBoost.value = lerp(stars.material.uniforms.uBoost.value, climbBoost, Math.min(1,dt*2));
+
+  for (const o of [crowd, boatLights, wheelLights]){
+    if (!o) continue;
+    const u = o.material.uniforms;
+    if (u.uTime) u.uTime.value = realT;
+    if (u.uFlash) u.uFlash.value = S.flash;
+    if (u.uPix) u.uPix.value = renderer.getPixelRatio();
+  }
+
+  /* --- tube --- */
+  tubeU.uTime.value = realT;
+  fireU.uTime.value = realT;
+  const igniting = (S.phase === 'launch');
+  tubeU.uIgnite.value = igniting ? Math.max(0, 1 - S.t/0.75) : 0;
+  fireU.uIgnite.value = igniting ? Math.max(0, 1 - S.t/0.62) : 0;
+  tubeU.uStreak.value = igniting ? Math.max(0, 1 - S.t/1.1)*launchSpeed(clamp(S.t/T_LAUNCH,0,1)) : 0;
+  tubeU.uFuse.value = (S.phase === 'tube') ? 0.85 : Math.max(0, 1 - S.t*3);
+  fuseGlow.material.uniforms.uIntensity.value =
+    (S.phase === 'tube' ? 1.4 + 0.9*Math.abs(Math.sin(realT*11.0)*Math.sin(realT*4.3)) : 0.0);
+  const mf = mouthFlash.material.uniforms.uIntensity;
+  mf.value = Math.max(0, mf.value - dt*3.2);
+
+  /* --- shock --- */
+  if (S.phase === 'burst' && S.shock > 0.008){
+    shockMesh.visible = true;
+    const r = 3 + 86*(1 - Math.exp(-S.fbT*3.2));
+    shockMesh.scale.setScalar(r);
+    shockU.uFade.value = Math.pow(S.shock, 2.2)*0.95;
+    shockMesh.position.copy(S.burstPos);
+  } else shockMesh.visible = false;
+
+  /* --- shell body (outside views only) --- */
+  shellGlow.visible = (S.camMode === 'crowd' && S.phase === 'launch');
+  if (shellGlow.visible){
+    shellGlow.position.copy(camRidePos());
+    shellGlow.material.uniforms.uIntensity.value = 1.6 + 2.4*launchSpeed(clamp(S.t/T_LAUNCH,0,1));
+  }
+
+  /* --- render --- */
+  if (composer) composer.render(); else renderer.render(scene, camera);
+
+  /* --- hud --- */
+  fpsAcc += dt; fpsN++;
+  if (dt > 0.0005) fpsEMA = fpsEMA*0.94 + (1/dt)*0.06;
+  if (fpsAcc > 0.5){
+    fpsEl.textContent = Math.round(fpsN/fpsAcc) + ' fps · ' + Math.round(emberGeo.instanceCount/SEGS) + ' stars';
+    fpsAcc = 0; fpsN = 0;
+  }
+}
+
+/* ==========================================================================
+   11. IGNITION
+   ========================================================================== */
+buildEmbers();
+buildSmoke();
+setupComposer();
+enterTube();
+S.ready = true;
+requestAnimationFrame(tick);
+
+const _boot = document.getElementById('boot');
+if (_boot){ _boot.style.opacity = 0; setTimeout(()=>_boot.remove(), 800); }
+
+setTimeout(()=>{ hud.classList.add('on'); }, 2600);
+setTimeout(()=>{ el('hint').classList.add('on'); }, 3200);
+setTimeout(()=>{ el('hint').classList.remove('on'); }, 13000);
+
+// the launch sound must be armed by a gesture; start it on the first one
+addEventListener('pointerdown', ()=>{
+  initAudio();
+  if (audio.ctx && !audio.on){
+    audio.on = true;
+    audio.master.gain.setTargetAtTime(0.55, audio.ctx.currentTime, 0.4);
+    soundBtn.textContent = 'Sound on';
+    soundBtn.classList.add('act');
+  }
+}, { once:true });
+
+window.__set = (o)=>{ for (const k in o) S[k]=o[k]; };
+window.__burst = (t, fb)=>jumpBurst(t, fb);
+window.__preset = (n)=>preset(n);
+window.__em = ()=>({embers:cursor, inst:emberGeo.instanceCount});
+window.__dbg = () => ({phase:S.phase, t:+S.t.toFixed(2), fwT:+S.fwT.toFixed(2), fbT:+S.fbT.toFixed(2),
+  embers:cursor, inst:emberGeo.instanceCount, y:+camera.position.y.toFixed(1), fov:+camera.fov.toFixed(1),
+  elev:+cam.elev.toFixed(2), yaw:+cam.yaw.toFixed(2), type:S.burstType, mode:S.camMode, flash:+S.flash.toFixed(2)});
+
+// hook: the whistle at ignition
+const _ignition = ignition;
+ignition = function(){ _ignition(); audioLaunch(); };
+</script>
+</body>
+</html>
