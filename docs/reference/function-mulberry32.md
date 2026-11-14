@@ -11,3 +11,11 @@ let rnd = mulberry32(20261120);
 ```
 
 First seen at line 156; used 1 time(s).
+
+## References
+
+Lines 156.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
