@@ -11,3 +11,11 @@ const camera = new THREE.PerspectiveCamera(72, window.innerWidth/window.innerHei
 ```
 
 First seen at line 169; used 1 time(s).
+
+## References
+
+Lines 169.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
