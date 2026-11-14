@@ -11,3 +11,11 @@ let cursor = 0, highWater = 0;
 ```
 
 First seen at line 222; used 1 time(s).
+
+## References
+
+Lines 222.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
