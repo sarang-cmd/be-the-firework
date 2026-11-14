@@ -11,3 +11,11 @@ const QUALITY = {
 ```
 
 First seen at line 174; used 1 time(s).
+
+## References
+
+Lines 174.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
