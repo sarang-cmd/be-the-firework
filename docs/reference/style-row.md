@@ -11,3 +11,11 @@ A style in the index.html.
 ```
 
 First seen at line 34; used 1 time(s).
+
+## References
+
+Lines 34.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
