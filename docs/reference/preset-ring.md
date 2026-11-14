@@ -11,3 +11,11 @@ A preset in the index.html.
 ```
 
 First seen at line 115; used 1 time(s).
+
+## References
+
+Lines 115.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
