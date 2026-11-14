@@ -11,3 +11,11 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
 ```
 
 First seen at line 162; used 1 time(s).
+
+## References
+
+Lines 162.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
