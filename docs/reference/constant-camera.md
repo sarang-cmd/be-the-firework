@@ -11,3 +11,11 @@ scene.add(camera);
 ```
 
 First seen at line 170; used 1 time(s).
+
+## References
+
+Lines 170.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
