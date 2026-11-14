@@ -11,3 +11,11 @@ A element in the index.html.
 ```
 
 First seen at line 94; used 1 time(s).
+
+## References
+
+Lines 94.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
