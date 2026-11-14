@@ -11,3 +11,11 @@ const T_BURST = 4.6;      // fw-seconds of bloom before the fall takes over
 ```
 
 First seen at line 208; used 1 time(s).
+
+## References
+
+Lines 208.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
