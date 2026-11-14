@@ -11,3 +11,11 @@ const EMBER_VERT = `
 ```
 
 First seen at line 226; used 1 time(s).
+
+## References
+
+Lines 226.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
