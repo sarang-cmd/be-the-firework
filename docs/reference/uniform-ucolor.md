@@ -11,3 +11,11 @@ A uniform in the fragment shader.
 ```
 
 First seen at line 522; used 1 time(s).
+
+## References
+
+Lines 522.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
