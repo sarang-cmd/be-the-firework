@@ -11,3 +11,11 @@ const TAU = Math.PI*2;
 ```
 
 First seen at line 153; used 1 time(s).
+
+## References
+
+Lines 153.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
