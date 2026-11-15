@@ -11,3 +11,11 @@ const skyMat = new THREE.ShaderMaterial({
 ```
 
 First seen at line 440; used 1 time(s).
+
+## References
+
+Lines 440.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
