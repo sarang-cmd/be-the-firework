@@ -11,3 +11,11 @@ const renderer = new THREE.WebGLRenderer({canvas, antialias:false, powerPreferen
 ```
 
 First seen at line 161; used 1 time(s).
+
+## References
+
+Lines 161.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
