@@ -11,3 +11,11 @@ A shader-io in the sky vertex shader.
 ```
 
 First seen at line 444; used 2 time(s).
+
+## References
+
+Lines 444, 447.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
