@@ -11,3 +11,11 @@ A shader-io in the water vertex shader.
 ```
 
 First seen at line 234; used 2 time(s).
+
+## References
+
+Lines 234, 312.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
