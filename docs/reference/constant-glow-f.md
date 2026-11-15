@@ -11,3 +11,11 @@ const GLOW_F = `
 ```
 
 First seen at line 520; used 1 time(s).
+
+## References
+
+Lines 520.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
