@@ -11,3 +11,11 @@ const GLOW_V = `
 ```
 
 First seen at line 511; used 1 time(s).
+
+## References
+
+Lines 511.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
