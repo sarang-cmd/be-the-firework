@@ -11,3 +11,11 @@ A glsl-helper in the fragment shader.
 ```
 
 First seen at line 727; used 2 time(s).
+
+## References
+
+Lines 727, 770.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
