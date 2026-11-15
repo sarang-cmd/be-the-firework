@@ -11,3 +11,11 @@ A uniform in the water vertex shader.
 ```
 
 First seen at line 228; used 9 time(s).
+
+## References
+
+Lines 228, 485, 574, 592, 726, 769, 909, 1021, 1063.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
