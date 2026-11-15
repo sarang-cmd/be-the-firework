@@ -11,3 +11,11 @@ const R = ()=> rnd();
 ```
 
 First seen at line 157; used 1 time(s).
+
+## References
+
+Lines 157.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
