@@ -11,3 +11,11 @@ A constant in the index.html.
 ```
 
 First seen at line 560; used 2 time(s).
+
+## References
+
+Lines 560, 616.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
