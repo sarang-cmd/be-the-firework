@@ -11,3 +11,11 @@ shockMesh.visible = false; shockMesh.frustumCulled = false; shockMesh.renderOrde
 ```
 
 First seen at line 649; used 1 time(s).
+
+## References
+
+Lines 649.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
