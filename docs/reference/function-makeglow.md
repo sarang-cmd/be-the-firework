@@ -11,3 +11,11 @@ function makeGlow(){
 ```
 
 First seen at line 534; used 1 time(s).
+
+## References
+
+Lines 534.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
