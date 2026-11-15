@@ -11,3 +11,11 @@ function buildEmbers(){
 ```
 
 First seen at line 328; used 1 time(s).
+
+## References
+
+Lines 328.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
