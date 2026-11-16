@@ -11,3 +11,11 @@ A uniform in the sky fragment shader.
 ```
 
 First seen at line 448; used 5 time(s).
+
+## References
+
+Lines 448, 592, 726, 769, 909.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
