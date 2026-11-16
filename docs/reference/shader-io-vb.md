@@ -11,3 +11,11 @@ A shader-io in the vertex shader.
 ```
 
 First seen at line 486; used 2 time(s).
+
+## References
+
+Lines 486, 495.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
