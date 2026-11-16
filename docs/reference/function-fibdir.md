@@ -11,3 +11,11 @@ function fibDir(out, i, n){
 ```
 
 First seen at line 1147; used 1 time(s).
+
+## References
+
+Lines 1147.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
