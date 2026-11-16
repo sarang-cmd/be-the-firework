@@ -11,3 +11,11 @@ structural.box(BRX, 17, 110, 16, 3.2, 520, 0, 0.7);
 ```
 
 First seen at line 848; used 1 time(s).
+
+## References
+
+Lines 848.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
