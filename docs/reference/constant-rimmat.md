@@ -11,3 +11,11 @@ const wheelGlowU = { uFlash:{value:0}, uTime:{value:0}, uColor:{value:new THREE.
 ```
 
 First seen at line 967; used 1 time(s).
+
+## References
+
+Lines 967.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
