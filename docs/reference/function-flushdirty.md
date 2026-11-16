@@ -11,3 +11,11 @@ function flushDirty(){
 ```
 
 First seen at line 389; used 1 time(s).
+
+## References
+
+Lines 389.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
