@@ -11,3 +11,11 @@ A glsl-helper in the water vertex shader.
 ```
 
 First seen at line 244; used 2 time(s).
+
+## References
+
+Lines 244, 593.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
