@@ -11,3 +11,11 @@ const cam = {
 ```
 
 First seen at line 1095; used 1 time(s).
+
+## References
+
+Lines 1095.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
