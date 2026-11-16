@@ -11,3 +11,11 @@ fuseGlow.position.set(Math.cos(0.9)*TUBE_R*0.86, TUBE_BASE + TUBE_H*0.48, Math.s
 ```
 
 First seen at line 1077; used 1 time(s).
+
+## References
+
+Lines 1077.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
