@@ -11,3 +11,11 @@ const tubeU = { uTime:{value:0}, uFuse:{value:1}, uIgnite:{value:0}, uStreak:{va
 ```
 
 First seen at line 1008; used 1 time(s).
+
+## References
+
+Lines 1008.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
