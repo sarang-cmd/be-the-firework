@@ -11,3 +11,11 @@ function buildCrowd(n){
 ```
 
 First seen at line 878; used 1 time(s).
+
+## References
+
+Lines 878.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
