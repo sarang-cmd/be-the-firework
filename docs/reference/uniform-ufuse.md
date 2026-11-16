@@ -11,3 +11,11 @@ A uniform in the crowd fragment shader.
 ```
 
 First seen at line 1021; used 1 time(s).
+
+## References
+
+Lines 1021.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
