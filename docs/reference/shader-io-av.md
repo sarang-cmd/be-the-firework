@@ -11,3 +11,11 @@ A shader-io in the smoke vertex shader.
 ```
 
 First seen at line 573; used 1 time(s).
+
+## References
+
+Lines 573.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
