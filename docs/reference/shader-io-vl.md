@@ -11,3 +11,11 @@ A shader-io in the city vertex shader.
 ```
 
 First seen at line 715; used 4 time(s).
+
+## References
+
+Lines 715, 725, 1013, 1020.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
