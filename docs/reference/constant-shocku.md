@@ -11,3 +11,11 @@ const shockMat = new THREE.ShaderMaterial({
 ```
 
 First seen at line 627; used 1 time(s).
+
+## References
+
+Lines 627.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
