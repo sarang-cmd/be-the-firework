@@ -11,3 +11,11 @@ const BOX_FACES = [
 ```
 
 First seen at line 665; used 1 time(s).
+
+## References
+
+Lines 665.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
