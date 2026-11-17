@@ -11,3 +11,11 @@ A shell in the index.html.
 ```
 
 First seen at line 1340; used 1 time(s).
+
+## References
+
+Lines 1340.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
