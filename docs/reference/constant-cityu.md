@@ -11,3 +11,11 @@ const cityU = {
 ```
 
 First seen at line 705; used 1 time(s).
+
+## References
+
+Lines 705.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
