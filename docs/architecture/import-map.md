@@ -5,3 +5,11 @@ An import map before the module maps `three` and `three/addons/` to the same pin
 ## Where it lives
 
 `index.html` — `import map`
+
+## Related
+
+- [One module](single-module.md)
+
+## Status
+
+Documented against build v1.0.0; numbers read out of the live source.
