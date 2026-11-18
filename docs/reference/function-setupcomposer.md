@@ -11,3 +11,11 @@ function setupComposer(){
 ```
 
 First seen at line 1823; used 1 time(s).
+
+## References
+
+Lines 1823.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
