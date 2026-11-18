@@ -11,3 +11,11 @@ const rim = new THREE.Mesh(new THREE.TorusGeometry(21, 0.42, 5, 72), new THREE.M
 ```
 
 First seen at line 968; used 1 time(s).
+
+## References
+
+Lines 968.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
