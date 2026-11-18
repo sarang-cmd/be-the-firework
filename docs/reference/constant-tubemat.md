@@ -11,3 +11,11 @@ const tubeMat = new THREE.ShaderMaterial({
 ```
 
 First seen at line 1010; used 1 time(s).
+
+## References
+
+Lines 1010.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
