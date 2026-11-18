@@ -11,3 +11,11 @@ const waterU = { uTime:{value:0}, uFlash:{value:0}, uBurst:{value:new THREE.Vect
 ```
 
 First seen at line 759; used 1 time(s).
+
+## References
+
+Lines 759.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
