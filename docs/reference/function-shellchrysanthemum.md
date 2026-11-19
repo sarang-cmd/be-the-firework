@@ -11,3 +11,11 @@ function shellChrysanthemum(o, t0, tint){
 ```
 
 First seen at line 1197; used 1 time(s).
+
+## References
+
+Lines 1197.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
