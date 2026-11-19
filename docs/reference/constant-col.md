@@ -11,3 +11,11 @@ const COL = {
 ```
 
 First seen at line 1154; used 1 time(s).
+
+## References
+
+Lines 1154.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
