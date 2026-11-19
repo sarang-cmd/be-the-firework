@@ -5,3 +5,12 @@ The whole experience is one ES module: geometry builders, shaders, the state mac
 ## Where it lives
 
 `index.html` — `index.html`
+
+## Related
+
+- [Import map](import-map.md)
+- [Phase machine](state-machine.md)
+
+## Status
+
+Documented against build v1.0.0; numbers read out of the live source.
