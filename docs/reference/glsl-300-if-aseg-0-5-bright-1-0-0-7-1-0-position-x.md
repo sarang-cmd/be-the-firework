@@ -5,3 +5,8 @@ From the water vertex shader.
 ```glsl
 if (aSeg < 0.5) bright *= 1.0 + 0.7*(1.0-position.x);
 ```
+
+## Context
+
+Surrounding shader line in the water vertex shader; see `docs/reference/` for the
+symbols it touches.
