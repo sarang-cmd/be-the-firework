@@ -11,3 +11,11 @@ const fireDisc = new THREE.Mesh(new THREE.CircleGeometry(TUBE_R*1.02, 40), new T
 ```
 
 First seen at line 1058; used 1 time(s).
+
+## References
+
+Lines 1058.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
