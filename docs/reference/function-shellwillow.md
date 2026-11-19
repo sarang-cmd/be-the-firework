@@ -11,3 +11,11 @@ function shellWillow(o, t0, tint){
 ```
 
 First seen at line 1182; used 1 time(s).
+
+## References
+
+Lines 1182.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
