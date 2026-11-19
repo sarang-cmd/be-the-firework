@@ -5,3 +5,8 @@ From the water vertex shader.
 ```glsl
 vec3 c = mix(vec3(1.0,0.965,0.88), aCol, smoothstep(0.0, 0.10, age));
 ```
+
+## Context
+
+Surrounding shader line in the water vertex shader; see `docs/reference/` for the
+symbols it touches.
