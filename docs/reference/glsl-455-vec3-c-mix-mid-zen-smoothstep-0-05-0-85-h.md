@@ -5,3 +5,8 @@ From the sky fragment shader.
 ```glsl
 vec3 c = mix(mid, zen, smoothstep(0.05,0.85,h));
 ```
+
+## Context
+
+Surrounding shader line in the sky fragment shader; see `docs/reference/` for the
+symbols it touches.
