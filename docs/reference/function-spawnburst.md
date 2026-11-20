@@ -11,3 +11,11 @@ function spawnBurst(type, o, t0){
 ```
 
 First seen at line 1338; used 1 time(s).
+
+## References
+
+Lines 1338.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
