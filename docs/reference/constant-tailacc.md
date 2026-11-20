@@ -11,3 +11,11 @@ let nextShellType = 'willow';
 ```
 
 First seen at line 1367; used 1 time(s).
+
+## References
+
+Lines 1367.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
