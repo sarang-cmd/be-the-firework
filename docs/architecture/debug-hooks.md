@@ -5,3 +5,11 @@
 ## Where it lives
 
 `index.html` — `window hooks`
+
+## Related
+
+- [Camera rig](camera-rig.md)
+
+## Status
+
+Documented against build v1.0.0; numbers read out of the live source.
