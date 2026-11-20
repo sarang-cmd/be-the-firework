@@ -11,3 +11,11 @@ const nudgeDir = new THREE.Vector3(1,0,0);
 ```
 
 First seen at line 1369; used 1 time(s).
+
+## References
+
+Lines 1369.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
