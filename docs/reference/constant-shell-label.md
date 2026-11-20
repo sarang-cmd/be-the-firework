@@ -11,3 +11,11 @@ const SHELL_LABEL = { willow:'GOLDEN WILLOW', chrysanthemum:'CHRYSANTHEMUM', pal
 ```
 
 First seen at line 1335; used 1 time(s).
+
+## References
+
+Lines 1335.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
