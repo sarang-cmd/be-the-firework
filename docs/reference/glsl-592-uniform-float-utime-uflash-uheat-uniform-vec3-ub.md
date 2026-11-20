@@ -5,3 +5,8 @@ From the fragment shader.
 ```glsl
 uniform float uTime, uFlash, uHeat; uniform vec3 uBurst;
 ```
+
+## Context
+
+Surrounding shader line in the fragment shader; see `docs/reference/` for the
+symbols it touches.
