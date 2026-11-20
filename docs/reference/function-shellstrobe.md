@@ -11,3 +11,11 @@ function shellStrobe(o, t0){
 ```
 
 First seen at line 1302; used 1 time(s).
+
+## References
+
+Lines 1302.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
