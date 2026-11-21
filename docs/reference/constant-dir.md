@@ -11,3 +11,11 @@ function updateCamera(dt){
 ```
 
 First seen at line 1496; used 1 time(s).
+
+## References
+
+Lines 1496.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
