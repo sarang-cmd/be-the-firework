@@ -11,3 +11,11 @@ const soundBtn = el('sound');
 ```
 
 First seen at line 1788; used 1 time(s).
+
+## References
+
+Lines 1788.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
