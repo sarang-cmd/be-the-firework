@@ -11,3 +11,11 @@ function jumpBurst(type, fb, dy, dz){
 ```
 
 First seen at line 1720; used 1 time(s).
+
+## References
+
+Lines 1720.
+
+## Status
+
+Extracted from `index.html` at v1.0.0.
