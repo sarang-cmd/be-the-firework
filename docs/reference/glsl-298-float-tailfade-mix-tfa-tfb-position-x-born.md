@@ -5,3 +5,8 @@ From the water vertex shader.
 ```glsl
 float tailFade = mix(tfA, tfB, position.x) * born;
 ```
+
+## Context
+
+Surrounding shader line in the water vertex shader; see `docs/reference/` for the
+symbols it touches.
