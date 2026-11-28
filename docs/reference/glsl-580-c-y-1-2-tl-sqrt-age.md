@@ -5,3 +5,8 @@ From the smoke vertex shader.
 ```glsl
 c.y += 1.2*tl*sqrt(age);
 ```
+
+## Context
+
+Surrounding shader line in the smoke vertex shader; see `docs/reference/` for the
+symbols it touches.
